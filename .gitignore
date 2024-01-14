@@ -45,6 +45,9 @@ finance_gameinator/app.*.map.json
 # Android Studio will place build artifacts here
 finance_gameinator/android/app/debug
 finance_gameinator/android/app/profile
-finance_gameinator//android/app/release
+finance_gameinator/android/app/release
+
+## SECRET
+finance_gameinator/lib/Secrets.dart
 ########################### END MOBILE APP ###########################
 
