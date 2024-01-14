@@ -1,3 +1,6 @@
+import 'dart:async';
+
+import 'package:finance_gameinator/Secrets.dart';
 import 'package:finance_gameinator/components/navigation/Navigator.dart';
 import 'package:flutter/material.dart';
 
@@ -9,6 +12,8 @@ import '../../../components/navigation/AppRouteNames.dart';
 import '../../../components/snackbar/Snackbar.dart';
 import '../../../components/widgets/GradientBackground.dart';
 import '../logic/Register.dart';
+import '../ports/UserService.dart';
+import 'ConfirmationPage.dart';
 
 /// This page was created based on the https://github.com/dhyash-simform/login_and_register_app repository
 class RegisterPage extends StatefulWidget {
@@ -204,9 +209,39 @@ class _RegisterPageState extends State<RegisterPage> {
                     builder: (_, isValid, __) {
                       return FilledButton(
                         onPressed: isValid
-                            ? () {
+                            ? () async {
+                                var currentContext = context;
+
+                                _formKey.currentState?.save();
+                                var result = await UserService(userPool).signUp(
+                                    emailController.text,
+                                    passwordController.text,
+                                    nameController.text);
+                                if (result.isFailure) {
+                                  Snackbar.showSnackBar(result.error?.message ??
+                                      AppStrings.anErrorHappened);
+                                  return;
+                                }
+                                var user = result.value!;
+                                const snackBar = SnackBar(
+                                  content: Text(AppStrings.userRegistered),
+                                  duration: Duration(seconds: 30),
+                                );
+
+                                if (!context.mounted) return;
+                                Navigator.pop(context);
+
+                                if (!user.confirmed) {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                        builder: (context) => ConfirmationPage(
+                                            email: user.email!)),
+                                  );
+                                }
+
                                 Snackbar.showSnackBar(
-                                  AppStrings.registrationComplete,
+                                  AppStrings.userRegistered,
                                 );
                                 nameController.clear();
                                 emailController.clear();
