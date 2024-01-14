@@ -1,0 +1,50 @@
+########################### GENERAL ###########################
+**/.env
+########################### END GENERAL ###########################
+
+########################### MOBILE APP ###########################
+# Miscellaneous
+finance_gameinator/*.class
+finance_gameinator/*.log
+finance_gameinator/*.pyc
+finance_gameinator/*.swp
+finance_gameinator/.DS_Store
+finance_gameinator/.atom/
+finance_gameinator/.buildlog/
+finance_gameinator/.history
+finance_gameinator/.svn/
+finance_gameinator/migrate_working_dir/
+
+# IntelliJ related
+finance_gameinator/*.iml
+finance_gameinator/*.ipr
+finance_gameinator/*.iws
+finance_gameinator/**/.idea/
+
+# The .vscode folder contains launch configuration and tasks you configure in
+# VS Code which you may wish to be included in version control, so this line
+# is commented out by default.
+#.vscode/
+
+# Flutter/Dart/Pub related
+finance_gameinator/**/doc/api/
+finance_gameinator/**/ios/Flutter/.last_build_id
+finance_gameinator/.dart_tool/
+finance_gameinator/.flutter-plugins
+finance_gameinator/.flutter-plugins-dependencies
+finance_gameinator/.pub-cache/
+finance_gameinator/.pub/
+finance_gameinator/**/build/
+
+# Symbolication related
+finance_gameinator/app.*.symbols
+
+# Obfuscation related
+finance_gameinator/app.*.map.json
+
+# Android Studio will place build artifacts here
+finance_gameinator/android/app/debug
+finance_gameinator/android/app/profile
+finance_gameinator//android/app/release
+########################### END MOBILE APP ###########################
+
