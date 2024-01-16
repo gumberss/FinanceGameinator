@@ -95,6 +95,7 @@ class _ConfirmationPageState extends State<ConfirmationPage> {
                         AppStrings.registrationComplete,
                       );
                       confirmationCodeController.clear();
+                      AppNavigator.pop();
                     },
                     child: const Text(AppStrings.confirm),
                   ),

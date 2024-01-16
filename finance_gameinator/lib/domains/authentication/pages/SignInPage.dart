@@ -1,13 +1,18 @@
+import 'package:finance_gameinator/Secrets.dart';
 import 'package:finance_gameinator/components/constants/AppRegex.dart';
+import 'package:finance_gameinator/domains/authentication/ports/UserService.dart';
 import 'package:flutter/material.dart';
 
 import '../../../components/constants/AppStrings.dart';
 import '../../../components/constants/AppTheme.dart';
+import '../../../components/constants/ErrorIdentifier.dart';
 import '../../../components/fields/AppTextFormField.dart';
 import '../../../components/navigation/AppRouteNames.dart';
 import '../../../components/navigation/Navigator.dart';
 import '../../../components/snackbar/Snackbar.dart';
 import '../../../components/widgets/GradientBackground.dart';
+import '../../lobby/LobbyPage.dart';
+import 'ConfirmationPage.dart';
 
 /// This page was created based on the https://github.com/dhyash-simform/login_and_register_app repository
 class SignInPage extends StatefulWidget {
@@ -97,8 +102,8 @@ class _SignInPageState extends State<SignInPage> {
                       return value!.isEmpty
                           ? AppStrings.pleaseEnterEmailAddress
                           : AppRegex.emailRegex.hasMatch(value)
-                          ? null
-                          : AppStrings.invalidEmailAddress;
+                              ? null
+                              : AppStrings.invalidEmailAddress;
                     },
                   ),
                   ValueListenableBuilder(
@@ -115,12 +120,12 @@ class _SignInPageState extends State<SignInPage> {
                           return value!.isEmpty
                               ? AppStrings.pleaseEnterPassword
                               : AppRegex.passwordRegex.hasMatch(value)
-                              ? null
-                              : AppStrings.invalidPassword;
+                                  ? null
+                                  : AppStrings.invalidPassword;
                         },
                         suffixIcon: IconButton(
                           onPressed: () =>
-                          passwordNotifier.value = !passwordObscure,
+                              passwordNotifier.value = !passwordObscure,
                           style: IconButton.styleFrom(
                             minimumSize: const Size.square(48),
                           ),
@@ -145,13 +150,47 @@ class _SignInPageState extends State<SignInPage> {
                     builder: (_, isValid, __) {
                       return FilledButton(
                         onPressed: isValid
-                            ? () {
-                          Snackbar.showSnackBar(
-                            AppStrings.loggedIn,
-                          );
-                          emailController.clear();
-                          passwordController.clear();
-                        }
+                            ? () async {
+                                var result = await UserService(userPool).login(
+                                    emailController.text,
+                                    passwordController.text);
+
+                                if (!context.mounted) return;
+                                if (result.isFailure) {
+                                  if (result.error!.identifier ==
+                                      ErrorIdentifier.userNotConfirmed) {
+                                    Snackbar.showSnackBar(
+                                      AppStrings.confirmYourAccount,
+                                    );
+
+                                    Navigator.pop(context);
+                                    Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                            builder: (context) =>
+                                                ConfirmationPage(
+                                                    email:
+                                                        emailController.text)));
+                                  }
+
+                                  Snackbar.showSnackBar(
+                                    result.error!.message
+                                  );
+                                  return;
+                                }
+
+                                Snackbar.showSnackBar(
+                                  AppStrings.loggedIn,
+                                );
+
+                                Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                        builder: (context) => LobbyPage()));
+
+                                emailController.clear();
+                                passwordController.clear();
+                              }
                             : null,
                         child: const Text(AppStrings.login),
                       );
