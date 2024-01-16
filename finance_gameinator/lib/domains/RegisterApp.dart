@@ -8,10 +8,11 @@ import '../components/constants/AppTheme.dart';
 import '../components/navigation/AppRouteNames.dart';
 import '../components/navigation/AppRoutes.dart';
 import '../components/snackbar/Snackbar.dart';
+import 'lobby/LobbyRegister.dart';
 
 class RegisterApp extends StatelessWidget {
   RegisterApp({super.key}) {
-    List<RegisterModuleBase> registers = [AuthenticationRegister()];
+    List<RegisterModuleBase> registers = [AuthenticationRegister(), LobbyRegister()];
     registers.forEach((register) => register.registerRoutes());
   }
 

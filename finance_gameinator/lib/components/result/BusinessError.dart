@@ -1,6 +1,6 @@
 class BusinessError {
   String? message;
-  int status;
+  String identifier;
 
-  BusinessError(this.status, this.message);
+  BusinessError(this.identifier, this.message);
 }
