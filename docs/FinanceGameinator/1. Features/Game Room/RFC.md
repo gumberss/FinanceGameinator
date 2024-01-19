@@ -9,7 +9,7 @@ The initial iteration of this feature is designed with simplicity in mind.
 
 <img src="https://github.com/gumberss/FinanceControlinator/assets/38296002/70cea15a-834e-4d8f-8965-09a942f62897"/>
 
-This screen is divided into three main sections, each of which will be discussed in detail below. Rather than delving into the intricacies of how the database will behave within these sections at this moment, a comprehensive explanation will be provided in the [[#Game Room]] section later in this document.
+This screen is divided into three main sections, each of which will be discussed in detail below. Rather than delving into the intricacies of how the database will behave within these sections at this moment, a comprehensive explanation will be provided in the [[ADR]] document.
 
 ### Player Games
 
@@ -38,15 +38,16 @@ When a player creates a game, others can join the game room by entering the prov
 
 ## Game Room
 
+The game room feature enables players to assemble, organize, and invite others to join. Within the room, participants can view the list of all players, their connection status, and the admin has the authority to arrange the sequence of players in the game. Once all players are connected, the admin will be able to start the game. 
 
+<img src="https://github.com/gumberss/FinanceGameinator/assets/38296002/b05fbf1a-bf0b-43bd-a65d-9eac0c2f7d07"/>
 
+The most challenging aspect of this screen lies in socket management, as the server must broadcast updates to all connected players whenever a new player joins or leaves. Additionally, events such as the admin reordering players or initiating the game trigger broadcasts to ensure all players are promptly informed of these changes.
 
-
-
-
-Once this is consider part of the main flow of the game, even it is the start point of the game, the main idea is to take out the advantages of the AWS DynamoDB replication, being part of the single table of the game.
-
+All the details regarding the functioning of the socket and the interactions between DynamoDB and the socket will be explained in the [[ADR]].
 
 ## Out of scope
 
-Building upon our earlier discussion, this RFC is focused on the creation of a straightforward screen that encapsulates essential features for players. As such, we will not be incorporating more intricate functionalities, such as the [[Real-time User Room]], at this stage. Integrating real-time features would necessitate active socket communication within this screen, introducing a level of complexity that we currently wish to avoid.
+Expanding on our previous discussion, this RFC centers on crafting a simple screen with essential features for players. Consequently, more intricate functionalities, like the [[Real-time User Room]], will not be included in this initial version. While real-time functionality for the Game Room is crucial at this stage, the development of Real-time User Room can be considered for future iterations.
+
+Another functionality that will be deferred for the current phase is the removal of players from the game room. This feature will not be developed at this time, as other players can only join the room if they receive the shared code. The design ensures that unwelcome players cannot easily access the room. If for some reason it happened, the player can just create another room. Furthermore, in the future, we have the option to introduce an additional layer of security to the game room by implementing a password feature. This enhancement would provide an extra level of protection and control over access to the game room.

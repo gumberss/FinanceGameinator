@@ -13,7 +13,7 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "1. Features/Game Room/ADR.md",
+                "file": "1. Features/Game Room/RFC.md",
                 "mode": "source",
                 "backlinks": false,
                 "source": true
@@ -33,8 +33,8 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "1. Features/Game Room/ADR.md",
-                "mode": "preview",
+                "file": "1. Features/Game Room/RFC.md",
+                "mode": "source",
                 "backlinks": false,
                 "source": false
               }
@@ -107,7 +107,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "1. Features/Game Room/ADR.md",
+                "file": "1. Features/Game Room/RFC.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -124,7 +124,7 @@
             "state": {
               "type": "outgoing-link",
               "state": {
-                "file": "1. Features/Game Room/ADR.md",
+                "file": "1. Features/Game Room/RFC.md",
                 "linksCollapsed": false,
                 "unlinkedCollapsed": true
               }
@@ -147,7 +147,7 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "1. Features/Game Room/ADR.md"
+                "file": "1. Features/Game Room/RFC.md"
               }
             }
           }
@@ -170,9 +170,9 @@
   },
   "active": "b86c7332ad9a3008",
   "lastOpenFiles": [
+    "0. Ideas/Real-Time User Room.md",
     "1. Features/Game Room/RFC.md",
     "1. Features/Game Room/ADR.md",
-    "0. Ideas/Real-Time User Room.md",
     "Untitled.canvas",
     "1. Features/Game Room",
     "Welcome.md",
