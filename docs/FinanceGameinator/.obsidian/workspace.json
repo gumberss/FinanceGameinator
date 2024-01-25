@@ -6,6 +6,7 @@
       {
         "id": "f9605514c8be9e04",
         "type": "tabs",
+        "dimension": 49.87309644670051,
         "children": [
           {
             "id": "b86c7332ad9a3008",
@@ -15,7 +16,7 @@
               "state": {
                 "file": "1. Features/Game Room/ADR.md",
                 "mode": "source",
-                "source": false
+                "source": true
               }
             },
             "group": "a9a75d95512605ea"
@@ -25,6 +26,7 @@
       {
         "id": "7fdf24713d2c1416",
         "type": "tabs",
+        "dimension": 50.1269035532995,
         "children": [
           {
             "id": "6def7a7f90982d7b",
@@ -33,7 +35,7 @@
               "type": "markdown",
               "state": {
                 "file": "1. Features/Game Room/ADR.md",
-                "mode": "source",
+                "mode": "preview",
                 "source": false
               }
             },
@@ -168,10 +170,10 @@
   },
   "active": "b86c7332ad9a3008",
   "lastOpenFiles": [
+    "1. Features/Game Room/RFC.md",
+    "1. Features/Game Room/ADR.md",
     "0. Ideas/Real-Time User Room.md",
     "1. Features/Game Room/Decision Matrix.md",
-    "1. Features/Game Room/ADR.md",
-    "1. Features/Game Room/RFC.md",
     "2024-01-25.md",
     "Untitled.canvas",
     "Pasted image 20240120221740.png",

@@ -2,7 +2,7 @@
 
 To enable players to access their games, a request will be sent to the REST API outlined below. It's important to note that following step five, the flow will simply return the data obtained by the lambda function to the player:
 
-<img src="https://github.com/gumberss/FinanceControlinator/assets/38296002/85e9b2d4-869a-4a9d-94bd-2e539b22c026"/>
+<img src="https://github.com/gumberss/FinanceGameinator/assets/38296002/75e1a2f7-3c05-4b33-a656-454b42987475"/>
 
 The flow for all player actions within this screen will follow a similar pattern. Each action initiates from the app, traverses through the REST API, undergoes token validation by Cognito. Upon successful validation, the request is then redirected to the appropriate Lambda function responsible for handling the specific player-requested action. Subsequently, the Lambda function executes queries to DynamoDB to fulfill the requested action.
 
@@ -48,9 +48,66 @@ s. The primary advantage lies in the efficient retrieval of games associated wit
 
 Another notable advantage of this approach is the ability to consolidate all player-related data within the same partition, eliminating the inclusion of extraneous data unrelated to the player's activities, such as data pertaining to the player during gameplay. This consolidation ensures that all player-related information is stored in a cohesive manner, free from out-of-context data.
 
- 
+## System Flows
 
-## Possible solutions
+The primary goal of this session is to offer a comprehensive overview of the expected behavior and interactions among system components. Furthermore, it will demonstrate the functionality of the socket, outlining how the system responds to socket events and specifying the conditions under which the system broadcasts messages to all players through the socket.
+
+To simplify matters, the AWS Rest API is omitted from the diagrams as it functions solely as a proxy for requests made by the client to the Lambda, which houses the business logic. Similarly, the AWS Socket API is represented as 'Socket' in order to maintain a conceptual focus rather than delving into implementation details.
+
+Below are a series of sequence diagrams designed to elucidate the actions the system will undertake in response to the player interactions with the app. These sequences cover the period from the moment a player logs into the app up to the initiation of a game. It's important to note that this ADR encompasses the decision-making process up to the commencement of a game.
+
+### Player Details
+
+This initial diagram illustrates the flow for making data available to the player. Currently, the unique detail is the player's games. However, as the player's dataset expands to include additional information such as badges, levels, and more, all this data will be consolidated within the same partition. This approach ensures simplified reads, requiring only the provision of the player's unique identifier (player#id).
+
+<img src="https://github.com/gumberss/FinanceGameinator/assets/38296002/1531706c-1e6f-4472-b72f-529377acd070"/>
+
+### Game Creation
+
+After a player logs in, they have the option to create a new game. Upon providing the game name and initiating the game creation request to the server-side, the corresponding Lambda function will execute three database operations:
+
+1. Game Creation:
+    - Creates the game itself along with its metadata.
+2. Player for the Game:
+    - Establishes a player entry specific to the newly created game. This entry stores all player-related information pertinent to this particular game.
+    - This player should have the admin permissions
+1. Game Metadata within Player Partition:
+    - Inserts the game metadata within the player's partition, ensuring visibility of the game to the player in their list of games.
+
+Upon receiving a successful response from the server, indicating the successful creation of the game, the client-side app will extract the game socket room information from the response body. Subsequently, it will establish a connection to this socket room using the Socket API. This connection enables the players to receive real-time updates and information from the game, as well as interactions with other players who join the game room too. 
+
+In the final step, as the player connects or disconnects to the game socket room, their status will be promptly updated in the database. This information holds significance in ensuring that the system has an accurate account of all online players, a crucial prerequisite for initiating a game.
+
+<img src="https://github.com/gumberss/FinanceGameinator/assets/38296002/b49129e8-3331-4f20-b8fe-cb9806186ba0"/>
+
+### Join a game
+
+Once a player requests to the server side to join a game, the serve will find the game and if it exists, will make a batch of two operation:
+1. Player for the Game:
+    - Something mentioned for the game creation
+2. Game Metadata within Player Partition:
+	1. Something mentioned for the game creation
+
+The socket interactions are exactly the same to the Game Creation flow, the difference is that at this moment the flow happens with the player who joined the game.
+
+<img src="https://github.com/gumberss/FinanceGameinator/assets/38296002/59eb90d8-0542-44de-a2d4-e391852fd02a"/>
+
+### Disconnect from a game
+
+When a player disconnects from a game, the socket will relay this information to a corresponding Lambda function. This Lambda function is responsible for updating the player's status in the database and broadcasting all other players in the room about the disconnection. It's worth noting that once a player is disconnected, the admin player will be unable to initiate the start of the game.
+
+On the left side of the diagram, a note is included, suggesting a potential new feature for future development.
+
+<img src="https://github.com/gumberss/FinanceGameinator/assets/38296002/63f89abc-d914-4499-9434-aaf35909d6a7"/>
+
+### Starting the game
+
+Once all players are online, the admin player of the game gains the ability to start the game. Initiating this action will trigger a change in the game state within the database, subsequently notifying all other players about the commencement of the game
+
+<img src="https://github.com/gumberss/FinanceGameinator/assets/38296002/0b86844c-9ad7-45cb-a2bf-c382f33af727"/>
+
+ 
+## Other Possible solutions
 ### Database Architecture 
 
 #### Global Secondary Index
