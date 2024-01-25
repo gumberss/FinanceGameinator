@@ -15,8 +15,7 @@
               "state": {
                 "file": "1. Features/Game Room/ADR.md",
                 "mode": "source",
-                "backlinks": false,
-                "source": true
+                "source": false
               }
             },
             "group": "a9a75d95512605ea"
@@ -35,7 +34,6 @@
               "state": {
                 "file": "1. Features/Game Room/ADR.md",
                 "mode": "source",
-                "backlinks": false,
                 "source": false
               }
             },
@@ -170,12 +168,13 @@
   },
   "active": "b86c7332ad9a3008",
   "lastOpenFiles": [
+    "0. Ideas/Real-Time User Room.md",
     "1. Features/Game Room/Decision Matrix.md",
     "1. Features/Game Room/ADR.md",
-    "Pasted image 20240120221740.png",
     "1. Features/Game Room/RFC.md",
-    "0. Ideas/Real-Time User Room.md",
+    "2024-01-25.md",
     "Untitled.canvas",
+    "Pasted image 20240120221740.png",
     "1. Features/Game Room",
     "Welcome.md",
     "2. Historical",

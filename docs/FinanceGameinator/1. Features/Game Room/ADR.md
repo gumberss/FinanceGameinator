@@ -38,6 +38,8 @@ To have more control, you can consider using the game ID as the sort key, allowi
 
 One trade-off with this solution is that the denormalization of game information, specifically adding the game name to the player partition key, requires the system to manually replicate the information. Whenever a player joins a game, the system must not only add the player to the game but also undertake an additional step of updating the player partition by adding the game information, in this case, the game name. And not only it, but if the game metadata that was replicated to the player partition is changed, the system must change the data for every player in the game, updating the data in each player partition This choice involves investing more write operations to optimize for reduced read operations.
 
+To address the challenge of data replication, the system can opt for replicating the data using DynamoDB Streams. While the trade-off persists, replicating the data asynchronously through DynamoDB Streams allows the system to manage the process more effectively.
+
 A final overview of how the table will work will be described in the image below:
 
 <img src="https://github.com/gumberss/PurchaseListinator/assets/38296002/3ef6176b-4154-4c18-bfa2-04719ad140ce"/>
@@ -45,6 +47,8 @@ A final overview of how the table will work will be described in the image below
 s. The primary advantage lies in the efficient retrieval of games associated with a player. By querying only one partition key (player#id) and utilizing a sort key beginning with games#, the system significantly reduces costs by minimizing the read capacity unit (RCU) expenditure required for data retrieval.
 
 Another notable advantage of this approach is the ability to consolidate all player-related data within the same partition, eliminating the inclusion of extraneous data unrelated to the player's activities, such as data pertaining to the player during gameplay. This consolidation ensures that all player-related information is stored in a cohesive manner, free from out-of-context data.
+
+ 
 
 ## Possible solutions
 ### Database Architecture 
@@ -85,6 +89,8 @@ Denormalization on the other hand can indeed take advantage of the RCU, because 
 Denormalizing the game data within the player information could potentially compromise the intended meaning of the row. The row retrievable by the Partition Key (PK) as Game#id and the Sort Key (SK) as Player#id is designed to represent player-specific data within a game, rather than holding information meant for use outside of the game, such as in player rooms. 
 
 Moreover, this pattern could potentially multiply for any additional information requiring retrieval by player#id, presenting challenges for long-term sustainability. For instance, if future requirements include displaying in player rooms the total number of players in a game or other game-related information, these details would also need to be replicated to the player registries and those data are not part of the player information for the game. This pattern potentially will be replicated for every entity in the future, that's why it's better to find the best solution possible at this moment.
+
+While this drawback could potentially be mitigated by leveraging DynamoDB Accelerator (DAX), it does come with an increased cost to the solution. This is because the DAX cluster maintains an in-memory cache of the data when queried.
 
 #### Other possible solutions 
 
