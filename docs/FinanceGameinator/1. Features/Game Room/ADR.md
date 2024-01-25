@@ -26,8 +26,30 @@ On the flip side, for the player rooms screen, it is crucial to provide informat
 
 The challenge arises from DynamoDB's requirement for queries to include the partition key, adding complexity to the process. However, we can overcome with some strategies:
 
+### Player as partition key
 
-### Global Secondary Index
+Utilizing the player name as the partition key allows the database to consolidate all data related to a specific player in a single location. This design ensures easy retrieval of all information associated with a particular player. Beyond obtaining a list of games a player is part of, this strategy makes possible the retrieval of any information related to that player, as all data is conveniently grouped together in the database by using the same partition. The image below presents a example of how the table can designed:
+
+<img src="https://github.com/gumberss/FinanceGameinator/assets/38296002/809537d3-151d-4bd1-833d-fa7a10a27a77"/>
+
+To have more control, you can consider using the game ID as the sort key, allowing for better organization and specificity within the data:
+
+<img src="https://github.com/gumberss/FinanceGameinator/assets/38296002/39e5975a-281a-44a1-ad0c-5b41e88e4cfa"/>
+
+One trade-off with this solution is that the denormalization of game information, specifically adding the game name to the player partition key, requires the system to manually replicate the information. Whenever a player joins a game, the system must not only add the player to the game but also undertake an additional step of updating the player partition by adding the game information, in this case, the game name. And not only it, but if the game metadata that was replicated to the player partition is changed, the system must change the data for every player in the game, updating the data in each player partition This choice involves investing more write operations to optimize for reduced read operations.
+
+A final overview of how the table will work will be described in the image below:
+
+<img src="https://github.com/gumberss/PurchaseListinator/assets/38296002/3ef6176b-4154-4c18-bfa2-04719ad140ce"/>
+
+s. The primary advantage lies in the efficient retrieval of games associated with a player. By querying only one partition key (player#id) and utilizing a sort key beginning with games#, the system significantly reduces costs by minimizing the read capacity unit (RCU) expenditure required for data retrieval.
+
+Another notable advantage of this approach is the ability to consolidate all player-related data within the same partition, eliminating the inclusion of extraneous data unrelated to the player's activities, such as data pertaining to the player during gameplay. This consolidation ensures that all player-related information is stored in a cohesive manner, free from out-of-context data.
+
+## Possible solutions
+### Database Architecture 
+
+#### Global Secondary Index
 
 A strategic solution involves leveraging the Global Secondary Index (GSI). The GSI is an additional index that you can create on a table. Unlike the primary key, which is used for the main table, a GSI allows you to query the data in the table using an alternate key, known as the index key. This provides more flexibility in querying the data, as you're not limited to the structure of the primary key.
 
@@ -50,47 +72,24 @@ There are two potential approaches to address this trade-off:
 1. Retrieve the games ids for a particular player and, before presenting them on the screen, hydrate the game IDs with the corresponding game data.
 2. Denormalize the game data, wherein the database replicates the game name for every player in the game. This would involve duplicating game information for each player, allowing for direct access to game details within each player's data row.
 
-#### Hydrate game Ids
+##### Hydrate game Ids
 
 Given that player rooms persistently appear whenever the app is opened and the associated game data remains relatively stable, the usage pattern aligns with 'write once and read many'. Consequently, hydrating the data each time the screen is accessed may not be an optimal pattern, as it could result in consuming a significant number of Read Capacity Units (RCU).
 
-#### Denormalization
+##### Denormalization
 
 Denormalization on the other hand can indeed take advantage of the RCU, because the data, for example the game name, will be write for each player, consuming more Write Capacity Unit (WCU) and less RCU, because the data is replicated for each player and it won't need to be hydrated, once the pattern is 'write once and read many' it would fit better.
 
-### Disadvantages
+##### Disadvantages
 
 Denormalizing the game data within the player information could potentially compromise the intended meaning of the row. The row retrievable by the Partition Key (PK) as Game#id and the Sort Key (SK) as Player#id is designed to represent player-specific data within a game, rather than holding information meant for use outside of the game, such as in player rooms. 
 
 Moreover, this pattern could potentially multiply for any additional information requiring retrieval by player#id, presenting challenges for long-term sustainability. For instance, if future requirements include displaying in player rooms the total number of players in a game or other game-related information, these details would also need to be replicated to the player registries and those data are not part of the player information for the game. This pattern potentially will be replicated for every entity in the future, that's why it's better to find the best solution possible at this moment.
 
+#### Other possible solutions 
 
-## Possible solutions
-### Database Architecture 
+All the other possible solutions considered for this architecture were described in the [[Decision Matrix]] 
 
-### Game Details for player 
-
-
-
-### Hydrate the game 
-
-
-
-### Player as partition key
-
-Utilizing the player name as the partition key allows the database to consolidate all data related to a specific player in a single location. This design ensures easy retrieval of all information associated with a particular player. Beyond obtaining a list of games a player is part of, this strategy makes possible the retrieval of any information related to that player, as all data is conveniently grouped together in the database by using the same partition. The image below presents a example of how the table can designed:
-
-<img src="https://github.com/gumberss/FinanceGameinator/assets/38296002/809537d3-151d-4bd1-833d-fa7a10a27a77"/>
-
-To have more control, you can consider using the game ID as the sort key, allowing for better organization and specificity within the data:
-
-<img src="https://github.com/gumberss/FinanceGameinator/assets/38296002/39e5975a-281a-44a1-ad0c-5b41e88e4cfa"/>
-
-If a user screen is proposed down the line, it can be seamlessly created with additional data elements such as badges, player levels, and a comprehensive list of games the player is part of. This design allows for the retrieval of all relevant data in a single request to the database, achieved by querying with the partition key (player#id).
-
-<img src="https://github.com/gumberss/FinanceGameinator/assets/38296002/e09e3ad2-5dd2-4d83-9a6f-c442269492ab"/>
-
-One trade-off with this solution is that the denormalization of game information, specifically adding the game name to the player partition key, requires the system to manually replicate the information. Whenever a player joins a game, the system must not only add the player to the game but also undertake an additional step of updating the player partition by adding the game information, in this case, the game name. This choice involves investing more write operations to optimize for reduced read operations.
 
 ### user validation
 #### Anonymous user
@@ -106,5 +105,9 @@ One trade-off with this solution is that the denormalization of game information
 ### References
 
 [Many to Many Relation in DynamoDB](https://kaushiknp.medium.com/many-to-many-relation-in-dynamodb-8e948ed38d8d)
+
 [Best practices for managing many-to-many relationships](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/bp-adjacency-graphs.html)
+
 [How to handle many to many in DynamoDB](https://stackoverflow.com/questions/48537284/how-to-handle-many-to-many-in-dynamodb)
+
+[Dynamodb single table structure for Many to many relation](https://stackoverflow.com/questions/65763721/dynamodb-single-table-structure-for-many-to-many-relation)
