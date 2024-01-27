@@ -58,3 +58,12 @@ finance_gameinator/lib/Secrets.dart
 
 ###########################  END DOCS  ###########################
 
+########################### SERVER SIDE###########################
+
+ServerSide/**/obj
+ServerSide/**/bin
+ServerSide/**/debug
+ServerSide/cdk.out
+ServerSide/**/.vs
+ServerSide/cdk.json
+######################### END SERVER SIDE#########################
