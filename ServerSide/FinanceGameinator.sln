@@ -5,7 +5,7 @@ VisualStudioVersion = 17.8.34330.188
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FinanceGameinator.CDK", "FinanceGameinator.CDK\FinanceGameinator.CDK.csproj", "{71E350E3-8D78-483A-A526-96DCE529F4BD}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FinanceGameinator.Players.Api", "FinanceGameinator.Players.Api\FinanceGameinator.Players.Api.csproj", "{02CD9E62-B011-4FEC-BD0E-CE54A23BC75E}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FinanceGameinator.Players.Api", "Modules\Players\FinanceGameinator.Players.Api\FinanceGameinator.Players.Api.csproj", "{02CD9E62-B011-4FEC-BD0E-CE54A23BC75E}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{AA12382F-AE7D-49D4-A4AA-7DDB7179EEC2}"
 	ProjectSection(SolutionItems) = preProject
@@ -18,9 +18,15 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Games", "Games", "{18858147
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Players", "Players", "{C5554483-490D-4956-AA7A-6AA0D8CA13CA}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FinanceGameinator.Games.Api", "Module\Games\FinanceGameinator.Games.Api\FinanceGameinator.Games.Api.csproj", "{7CEDA926-EB5D-4D42-8331-AC2DDB6EB4E0}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FinanceGameinator.Games.Api", "Modules\Games\FinanceGameinator.Games.Api\FinanceGameinator.Games.Api.csproj", "{7CEDA926-EB5D-4D42-8331-AC2DDB6EB4E0}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FinanceGameinator.Games.Api.Tests", "Module\Games\FinanceGameinator.Games.Api.Tests\FinanceGameinator.Games.Api.Tests.csproj", "{7F514465-FF23-4375-B113-F2A64AD17230}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FinanceGameinator.Games.Api.Tests", "Modules\Games\FinanceGameinator.Games.Api.Tests\FinanceGameinator.Games.Api.Tests.csproj", "{7F514465-FF23-4375-B113-F2A64AD17230}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Cross", "Cross", "{4399C50D-2336-41C3-BECA-69A81179E840}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FinanceGameinator.Cross.Api", "Modules\Cross\FinanceGameinator.Cross.Api\FinanceGameinator.Cross.Api.csproj", "{D3CE4A13-3A27-458A-8C17-526CD122DE57}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FinanceGameinator.Cross.Api.Tests", "Modules\Cross\FinanceGameinator.Cross.Api.Tests\FinanceGameinator.Cross.Api.Tests.csproj", "{980CA4A3-0053-4504-934D-4B46578BB2B2}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -44,6 +50,14 @@ Global
 		{7F514465-FF23-4375-B113-F2A64AD17230}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{7F514465-FF23-4375-B113-F2A64AD17230}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{7F514465-FF23-4375-B113-F2A64AD17230}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D3CE4A13-3A27-458A-8C17-526CD122DE57}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D3CE4A13-3A27-458A-8C17-526CD122DE57}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D3CE4A13-3A27-458A-8C17-526CD122DE57}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D3CE4A13-3A27-458A-8C17-526CD122DE57}.Release|Any CPU.Build.0 = Release|Any CPU
+		{980CA4A3-0053-4504-934D-4B46578BB2B2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{980CA4A3-0053-4504-934D-4B46578BB2B2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{980CA4A3-0053-4504-934D-4B46578BB2B2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{980CA4A3-0053-4504-934D-4B46578BB2B2}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -54,6 +68,9 @@ Global
 		{C5554483-490D-4956-AA7A-6AA0D8CA13CA} = {C4601FC5-60D7-479F-A398-D90ED127CF68}
 		{7CEDA926-EB5D-4D42-8331-AC2DDB6EB4E0} = {18858147-8248-4988-B502-12B43CA1F122}
 		{7F514465-FF23-4375-B113-F2A64AD17230} = {18858147-8248-4988-B502-12B43CA1F122}
+		{4399C50D-2336-41C3-BECA-69A81179E840} = {C4601FC5-60D7-479F-A398-D90ED127CF68}
+		{D3CE4A13-3A27-458A-8C17-526CD122DE57} = {4399C50D-2336-41C3-BECA-69A81179E840}
+		{980CA4A3-0053-4504-934D-4B46578BB2B2} = {4399C50D-2336-41C3-BECA-69A81179E840}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {C1009707-9210-4229-8963-1473BE1FE1F9}
