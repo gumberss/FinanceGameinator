@@ -16,6 +16,12 @@
 		<PackageReference Include="Amazon.Lambda.APIGatewayEvents" Version="2.7.0" />
 		<PackageReference Include="Amazon.Lambda.Core" Version="2.2.0" />
 		<PackageReference Include="Amazon.Lambda.Serialization.SystemTextJson" Version="2.4.0" />
+		<PackageReference Include="AWSSDK.DynamoDBv2" Version="3.7.301.2" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <ProjectReference Include="..\FinanceGameinator.Players.IoC\FinanceGameinator.Players.IoC.csproj" />
+	  <ProjectReference Include="..\FinanceGameinator.Players.UseCases\FinanceGameinator.Players.UseCases.csproj" />
 	</ItemGroup>
 
 </Project>

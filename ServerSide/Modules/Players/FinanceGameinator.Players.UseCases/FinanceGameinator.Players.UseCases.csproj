@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="CleanHandling" Version="1.0.9" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\FinanceGameinator.Players.Db\FinanceGameinator.Players.Db.csproj" />
+    <ProjectReference Include="..\FinanceGameinator.Players.Domain\FinanceGameinator.Players.Domain.csproj" />
+  </ItemGroup>
+
+</Project>
