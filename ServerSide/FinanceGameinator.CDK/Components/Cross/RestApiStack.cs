@@ -10,13 +10,13 @@ namespace FinanceGameinator.CDK.Components.Cross
     {
         public LambdaRestApi RestApi { get; }
 
-        internal RestApiStack(Stack stack,  Construct scope, IStackProps? props = null) : base(stack, scope, props)
+        internal RestApiStack(Stack stack, Construct scope, IStackProps? props = null) : base(stack, scope, props)
         {
             var notFoundPathLambda = new Function(Stack, "FinanceGameinatorDefaultLambdaFunction", new FunctionProps
             {
                 Runtime = Runtime.DOTNET_6,
-                //assembly::Namespace.of.it::Function
-                Handler = "FinanceGameinator.Players.Api::FinanceGameinator.Players.Api.Modules.Cross::Get",
+                //assembly::Namespace.of.it.ClassName::Function
+                Handler = "FinanceGameinator.Cross.Api::FinanceGameinator.Cross.Api.Ports.HttpServer::Get",
                 Code = Code.FromAsset("FinanceGameinator.Players.Api/bin/Debug/net6.0")
             });
 
