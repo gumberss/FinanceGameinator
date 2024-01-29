@@ -9,7 +9,7 @@ namespace FinanceGameinator.CDK.Models
         private Construct Scope { get; }
         private IStackProps? Props { get; }
 
-        internal FinanceGameinatorStack(Stack stack,Construct scope, IStackProps? props = null)
+        internal FinanceGameinatorStack(Stack stack, Construct scope, IStackProps? props = null)
         {
             Stack = stack;
             Scope = scope;

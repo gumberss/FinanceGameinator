@@ -2,6 +2,7 @@
 using FinanceGameinator.Players.Db.Interfaces.Cross;
 using FinanceGameinator.Players.Db.Interfaces.Repositories;
 using FinanceGameinator.Players.Db.Repositories;
+using FinanceGameinator.Players.IoC.Logger;
 using FinanceGameinator.Players.UseCases.Interfaces.UseCases;
 using FinanceGameinator.Players.UseCases.UseCases;
 using Microsoft.Extensions.DependencyInjection;
@@ -10,21 +11,24 @@ namespace FinanceGameinator.Players.IoC.ServiceCollectionProvider
 {
     public class ServiceCollectionProvider
     {
-        private ServiceCollection _serviceCollection;
+        private ServiceCollection _services;
+        private ILogger _logger;
 
-        public ServiceCollection ServiceCollection => _serviceCollection;
+        public ServiceCollection ServiceCollection => _services;
 
-        public ServiceCollectionProvider()
+        public ServiceCollectionProvider(ILogger logger)
         {
-            _serviceCollection = new ServiceCollection();
+            _services = new ServiceCollection();
+            _logger = logger;
             ConfigureServices();
         }
 
         private void ConfigureServices()
         {
-            _serviceCollection.AddTransient<IPlayerRepository, PlayersRepository>();
-            _serviceCollection.AddTransient<IDynamoDbConnection, DynamoDbConnection>();
-            _serviceCollection.AddTransient<IPlayerUseCase, PlayerUseCase>();
+            _services.AddLogging(logging => _logger.SetupLogger(false, logging));
+            _services.AddTransient<IPlayerRepository, PlayersRepository>();
+            _services.AddTransient<IDynamoDbConnection, DynamoDbConnection>();
+            _services.AddTransient<IPlayerUseCase, PlayerUseCase>();
         }
     }
 }

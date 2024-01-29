@@ -1,14 +1,14 @@
 ﻿using Amazon.CDK;
 using Amazon.CDK.AWS.DynamoDB;
-using DynamoDb = Amazon.CDK.AWS.DynamoDB;
 using Constructs;
 using FinanceGameinator.CDK.Models;
+using DynamoDb = Amazon.CDK.AWS.DynamoDB;
 
 namespace FinanceGameinator.CDK.Components.Cross
 {
     internal class DynamoDbStack : FinanceGameinatorStack
     {
-        internal DynamoDbStack(Stack stack,  Construct scope, IStackProps? props = null) : base(stack, scope, props)
+        internal DynamoDbStack(Stack stack, Construct scope, IStackProps? props = null) : base(stack, scope, props)
         { }
 
         internal Table RegisterTable()

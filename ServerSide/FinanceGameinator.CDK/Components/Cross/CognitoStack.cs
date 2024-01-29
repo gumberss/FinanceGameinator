@@ -13,7 +13,7 @@ namespace FinanceGameinator.CDK.Components.Cross
         private UserPoolClient UserPoolClient { get; }
         private CognitoUserPoolsAuthorizer CognitoAuthorizer { get; }
 
-        internal CognitoStack(Stack stack,  Construct scope, IStackProps? props = null) : base(stack, scope, props)
+        internal CognitoStack(Stack stack, Construct scope, IStackProps? props = null) : base(stack, scope, props)
         {
             UserPool = RegisterUserPool();
             UserPoolDomain = RegisterDomain(UserPool);

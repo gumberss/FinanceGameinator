@@ -3,15 +3,18 @@ using FinanceGameinator.Players.Db.Adapters;
 using FinanceGameinator.Players.Db.Interfaces.Cross;
 using FinanceGameinator.Players.Db.Interfaces.Repositories;
 using FinanceGameinator.Players.Domain.Models;
+using Microsoft.Extensions.Logging;
 
 namespace FinanceGameinator.Players.Db.Repositories
 {
     public class PlayersRepository : IPlayerRepository
     {
         readonly IDynamoDbConnection _dbConnection;
+        private readonly ILogger<PlayersRepository> _logger;
 
-        public PlayersRepository(IDynamoDbConnection dbConnection)
+        public PlayersRepository(ILogger<PlayersRepository> logger, IDynamoDbConnection dbConnection)
         {
+            _logger = logger;
             _dbConnection = dbConnection;
         }
 

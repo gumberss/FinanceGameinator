@@ -1,6 +1,6 @@
 ﻿using Amazon.DynamoDBv2.Model;
-using FinanceGameinator.Players.Domain.Models;
 using CleanHandling;
+using FinanceGameinator.Players.Domain.Models;
 using System.Net;
 
 namespace FinanceGameinator.Players.Db.Adapters

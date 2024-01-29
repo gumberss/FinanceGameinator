@@ -1,10 +1,10 @@
-﻿using Amazon.CDK.AWS.DynamoDB;
-using Amazon.CDK;
-using Constructs;
-using Amazon.CDK.AWS.Lambda;
+﻿using Amazon.CDK;
 using Amazon.CDK.AWS.APIGateway;
-using FinanceGameinator.CDK.Models;
+using Amazon.CDK.AWS.DynamoDB;
+using Amazon.CDK.AWS.Lambda;
+using Constructs;
 using FinanceGameinator.CDK.Components.Cross;
+using FinanceGameinator.CDK.Models;
 
 namespace FinanceGameinator.CDK.Components.Modules.Player
 {
@@ -24,7 +24,8 @@ namespace FinanceGameinator.CDK.Components.Modules.Player
                 Runtime = Runtime.DOTNET_6,
                 //assembly::Namespace.of.it::Function
                 Handler = "FinanceGameinator.Players.Api::FinanceGameinator.Players.Api.Ports.HttpServer::Get",
-                Code = Code.FromAsset("FinanceGameinator.Players.Api/bin/Release/net6.0")
+                Code = Code.FromAsset("Modules/Players/FinanceGameinator.Players.Api/bin/Release/net6.0/publish/linux-x64"),
+                //MemorySize = 256\bin\Release\net6.0\publish\linux-x64
             });
 
             dbTable.GrantReadData(userDataLambda);
