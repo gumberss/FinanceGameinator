@@ -14,6 +14,7 @@ namespace FinanceGameinator.CDK.Components.Cross
         internal Table RegisterTable()
             => new Table(Stack, "FinanceGameinatorTable", new TableProps
             {
+                TableName = "FinanceGameinatorTable",
                 PartitionKey = new DynamoDb.Attribute { Name = "PK", Type = AttributeType.STRING },
                 SortKey = new DynamoDb.Attribute { Name = "SK", Type = AttributeType.STRING },
                 BillingMode = BillingMode.PROVISIONED,

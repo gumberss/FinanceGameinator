@@ -18,6 +18,7 @@ namespace FinanceGameinator.Players.Db.Repositories
             _dbConnection = dbConnection;
         }
 
+
         public async Task<Result<Player, BusinessException>> QueryPlayer(Guid playerId)
             => await PlayerAdapter.ToGetPlayerByIdRequest(playerId)
                 .Then(queryRequest => _dbConnection.QueryAsync(queryRequest))

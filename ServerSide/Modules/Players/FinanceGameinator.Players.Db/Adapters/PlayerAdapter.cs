@@ -20,7 +20,7 @@ namespace FinanceGameinator.Players.Db.Adapters
                 KeyConditionExpression = $"{PK_COLL} = :pk",
                 ExpressionAttributeValues = new Dictionary<String, AttributeValue>
                 {
-                    { ":pk", new AttributeValue { S = $"{PK_COLL}{playerId}" } }
+                    { ":pk", new AttributeValue { S = $"{PLAYER_PREFIX}{playerId}" } }
                 }
             };
 

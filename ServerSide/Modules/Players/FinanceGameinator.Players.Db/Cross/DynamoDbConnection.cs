@@ -9,7 +9,7 @@ namespace FinanceGameinator.Players.Db.Cross
     {
         private static AmazonDynamoDBClient _dbClient => new AmazonDynamoDBClient();
 
-        public Task<Result<QueryResponse, BusinessException>> QueryAsync(QueryRequest request, CancellationToken cancellationToken = default(CancellationToken))
+        public Task<Result<QueryResponse, BusinessException>> QueryAsync(QueryRequest request, CancellationToken cancellationToken = default)
              => Result.Try(_dbClient.QueryAsync(request, cancellationToken));
 
     }

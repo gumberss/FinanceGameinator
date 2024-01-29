@@ -1,10 +1,13 @@
 ﻿using Amazon.CDK;
 using Amazon.CDK.AWS.APIGateway;
 using Amazon.CDK.AWS.DynamoDB;
+using Amazon.CDK.AWS.IAM;
 using Amazon.CDK.AWS.Lambda;
+using Amazon.CDK.AWS.SES.Actions;
 using Constructs;
 using FinanceGameinator.CDK.Components.Cross;
 using FinanceGameinator.CDK.Models;
+using System.Resources;
 
 namespace FinanceGameinator.CDK.Components.Modules.Player
 {
@@ -25,10 +28,10 @@ namespace FinanceGameinator.CDK.Components.Modules.Player
                 //assembly::Namespace.of.it::Function
                 Handler = "FinanceGameinator.Players.Api::FinanceGameinator.Players.Api.Ports.HttpServer::Get",
                 Code = Code.FromAsset("Modules/Players/FinanceGameinator.Players.Api/bin/Release/net6.0/publish/linux-x64"),
-                //MemorySize = 256\bin\Release\net6.0\publish\linux-x64
+                //MemorySize = 256
             });
 
-            dbTable.GrantReadData(userDataLambda);
+            dbTable.GrantFullAccess(userDataLambda);
 
             var playersResource = restApiStack.RestApi.Root
                 .AddResource("players", new ResourceOptions { });
