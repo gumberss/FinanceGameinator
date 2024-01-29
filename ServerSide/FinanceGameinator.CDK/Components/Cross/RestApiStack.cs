@@ -1,7 +1,7 @@
-﻿using Amazon.CDK.AWS.APIGateway;
-using Amazon.CDK;
-using Constructs;
+﻿using Amazon.CDK;
+using Amazon.CDK.AWS.APIGateway;
 using Amazon.CDK.AWS.Lambda;
+using Constructs;
 using FinanceGameinator.CDK.Models;
 
 namespace FinanceGameinator.CDK.Components.Cross
@@ -17,7 +17,7 @@ namespace FinanceGameinator.CDK.Components.Cross
                 Runtime = Runtime.DOTNET_6,
                 //assembly::Namespace.of.it.ClassName::Function
                 Handler = "FinanceGameinator.Cross.Api::FinanceGameinator.Cross.Api.Ports.HttpServer::Get",
-                Code = Code.FromAsset("FinanceGameinator.Players.Api/bin/Debug/net6.0")
+                Code = Code.FromAsset("Modules/Players/FinanceGameinator.Players.Api/bin/Release/net6.0")
             });
 
             RestApi = new LambdaRestApi(Stack, "FinanceGameinatorRestApi", new LambdaRestApiProps
