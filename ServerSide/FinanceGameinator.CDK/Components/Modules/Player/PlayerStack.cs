@@ -28,10 +28,11 @@ namespace FinanceGameinator.CDK.Components.Modules.Player
                 //assembly::Namespace.of.it::Function
                 Handler = "FinanceGameinator.Players.Api::FinanceGameinator.Players.Api.Ports.HttpServer::Get",
                 Code = Code.FromAsset("Modules/Players/FinanceGameinator.Players.Api/bin/Release/net6.0/publish/linux-x64"),
+                Timeout = Duration.Seconds(15)
                 //MemorySize = 256
             });
 
-            dbTable.GrantFullAccess(userDataLambda);
+            dbTable.GrantReadData(userDataLambda);
 
             var playersResource = restApiStack.RestApi.Root
                 .AddResource("players", new ResourceOptions { });
