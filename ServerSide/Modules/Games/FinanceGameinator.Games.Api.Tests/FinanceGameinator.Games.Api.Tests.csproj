@@ -4,7 +4,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <IsTestProject>true</IsTestProject>
-    <Configurations>Debug;Release;ReleaseMultiPublish</Configurations>
+    <Configurations>Debug;Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Amazon.Lambda.Core" Version="2.2.0" />

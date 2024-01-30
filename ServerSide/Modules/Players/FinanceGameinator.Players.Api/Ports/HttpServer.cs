@@ -16,6 +16,7 @@ namespace FinanceGameinator.Players.Api.Ports
         {
             _serviceCollection = new ServiceCollectionProvider(new Logger.LambdaLogger()).ServiceCollection;
         }
+
         public async Task<APIGatewayProxyResponse> Get(APIGatewayProxyRequest request, ILambdaContext context)
         {
             if (!request.PathParameters.TryGetValue("id", out String? stringId))
