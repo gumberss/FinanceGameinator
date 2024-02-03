@@ -5,13 +5,14 @@ import '../widgets/InvalidRoute.dart';
 class AppRoutes {
   const AppRoutes._();
 
-  static Map<String, Widget Function()> _pagesRegistered = {};
+  static Map<String, Widget Function(RouteSettings)> _pagesRegistered = {};
 
-  static void registerPage(String route, Widget Function() pageFunction) {
+  static void registerPage(String route, Widget Function(RouteSettings) pageFunction) {
     _pagesRegistered[route] = pageFunction;
   }
 
   static Route<dynamic> generateRoute(RouteSettings settings) {
+
     Route<dynamic> getRoute({
       required Widget widget,
       bool fullscreenDialog = false,
@@ -25,8 +26,8 @@ class AppRoutes {
 
     var page = _pagesRegistered.containsKey(settings.name)
     ? _pagesRegistered[settings.name]
-    : () => const InvalidRoute();
-    
-    return getRoute(widget: page!());
+    : (RouteSettings rs) => const InvalidRoute();
+
+    return getRoute(widget: page!(settings));
   }
 }

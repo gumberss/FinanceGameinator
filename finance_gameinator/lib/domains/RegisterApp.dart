@@ -1,6 +1,7 @@
-import 'package:finance_gameinator/components/navigation/Navigator.dart';
+import 'package:finance_gameinator/components/navigation/Navinator.dart';
 import 'package:finance_gameinator/domains/RegisterModuleBase.dart';
 import 'package:finance_gameinator/domains/authentication/AuthenticationRegister.dart';
+import 'package:finance_gameinator/domains/player/PlayerRegister.dart';
 import 'package:flutter/material.dart';
 
 import '../components/constants/AppStrings.dart';
@@ -8,11 +9,10 @@ import '../components/constants/AppTheme.dart';
 import '../components/navigation/AppRouteNames.dart';
 import '../components/navigation/AppRoutes.dart';
 import '../components/snackbar/Snackbar.dart';
-import 'lobby/LobbyRegister.dart';
 
 class RegisterApp extends StatelessWidget {
   RegisterApp({super.key}) {
-    List<RegisterModuleBase> registers = [AuthenticationRegister(), LobbyRegister()];
+    List<RegisterModuleBase> registers = [AuthenticationRegister(), PlayerRegister()];
     registers.forEach((register) => register.registerRoutes());
   }
 
@@ -24,7 +24,7 @@ class RegisterApp extends StatelessWidget {
       theme: AppTheme.themeData,
       initialRoute: AppRouteNames.login,
       scaffoldMessengerKey: Snackbar.key,
-      navigatorKey: AppNavigator.key,
+      navigatorKey: Navinator.key,
       onGenerateRoute: AppRoutes.generateRoute,
     );
   }

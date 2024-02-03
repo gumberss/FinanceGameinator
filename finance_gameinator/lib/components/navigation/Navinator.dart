@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-class AppNavigator {
-  const AppNavigator._();
+class Navinator {
+  const Navinator._();
 
   static final _key = GlobalKey<NavigatorState>();
 
@@ -21,7 +21,6 @@ class AppNavigator {
       String routeName, {
         Object? arguments,
       }) {
-    debugPrint((_key.currentState == null).toString());
     return _key.currentState?.pushReplacementNamed(
       routeName,
       arguments: arguments,

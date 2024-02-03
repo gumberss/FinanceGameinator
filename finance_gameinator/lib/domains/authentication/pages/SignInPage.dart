@@ -8,11 +8,9 @@ import '../../../components/constants/AppTheme.dart';
 import '../../../components/constants/ErrorIdentifier.dart';
 import '../../../components/fields/AppTextFormField.dart';
 import '../../../components/navigation/AppRouteNames.dart';
-import '../../../components/navigation/Navigator.dart';
+import '../../../components/navigation/Navinator.dart';
 import '../../../components/snackbar/Snackbar.dart';
 import '../../../components/widgets/GradientBackground.dart';
-import '../../lobby/LobbyPage.dart';
-import 'ConfirmationPage.dart';
 
 /// This page was created based on the https://github.com/dhyash-simform/login_and_register_app repository
 class SignInPage extends StatefulWidget {
@@ -163,19 +161,12 @@ class _SignInPageState extends State<SignInPage> {
                                       AppStrings.confirmYourAccount,
                                     );
 
-                                    Navigator.pop(context);
-                                    Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                            builder: (context) =>
-                                                ConfirmationPage(
-                                                    email:
-                                                        emailController.text)));
+                                    Navinator.pushReplacementNamed(
+                                        AppRouteNames.confirmation,
+                                        arguments: emailController.text);
                                   }
 
-                                  Snackbar.showSnackBar(
-                                    result.error!.message
-                                  );
+                                  Snackbar.showSnackBar(result.error!.message);
                                   return;
                                 }
 
@@ -183,10 +174,7 @@ class _SignInPageState extends State<SignInPage> {
                                   AppStrings.loggedIn,
                                 );
 
-                                Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                        builder: (context) => LobbyPage()));
+                                Navinator.pushNamed(AppRouteNames.playerHome);
 
                                 emailController.clear();
                                 passwordController.clear();
@@ -211,7 +199,7 @@ class _SignInPageState extends State<SignInPage> {
               const SizedBox(width: 4),
               TextButton(
                 onPressed: () {
-                  AppNavigator.pushReplacementNamed(
+                  Navinator.pushReplacementNamed(
                     AppRouteNames.register,
                   );
                 },

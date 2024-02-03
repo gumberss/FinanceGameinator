@@ -1,7 +1,7 @@
 import 'dart:async';
 
 import 'package:finance_gameinator/Secrets.dart';
-import 'package:finance_gameinator/components/navigation/Navigator.dart';
+import 'package:finance_gameinator/components/navigation/Navinator.dart';
 import 'package:flutter/material.dart';
 
 import '../../../components/constants/AppRegex.dart';
@@ -229,15 +229,9 @@ class _RegisterPageState extends State<RegisterPage> {
                                 );
 
                                 if (!context.mounted) return;
-                                Navigator.pop(context);
 
                                 if (!user.confirmed) {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                        builder: (context) => ConfirmationPage(
-                                            email: user.email!)),
-                                  );
+                                  Navinator.pushNamed(AppRouteNames.confirmation, arguments:  user.email!);
                                 }
 
                                 Snackbar.showSnackBar(
@@ -265,7 +259,7 @@ class _RegisterPageState extends State<RegisterPage> {
                 style: AppTheme.bodySmall.copyWith(color: Colors.black),
               ),
               TextButton(
-                onPressed: () => AppNavigator.pushReplacementNamed(
+                onPressed: () => Navinator.pushReplacementNamed(
                   AppRouteNames.login,
                 ),
                 child: const Text(AppStrings.login),
