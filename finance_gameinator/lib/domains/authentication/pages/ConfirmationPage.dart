@@ -1,12 +1,13 @@
 import 'package:finance_gameinator/Secrets.dart';
 import 'package:finance_gameinator/components/constants/AppRegex.dart';
+import 'package:finance_gameinator/components/navigation/AppRoutes.dart';
 import 'package:flutter/material.dart';
 
 import '../../../components/constants/AppStrings.dart';
 import '../../../components/constants/AppTheme.dart';
 import '../../../components/fields/AppTextFormField.dart';
 import '../../../components/navigation/AppRouteNames.dart';
-import '../../../components/navigation/Navigator.dart';
+import '../../../components/navigation/Navinator.dart';
 import '../../../components/snackbar/Snackbar.dart';
 import '../../../components/widgets/GradientBackground.dart';
 import '../ports/UserService.dart';
@@ -95,7 +96,7 @@ class _ConfirmationPageState extends State<ConfirmationPage> {
                         AppStrings.registrationComplete,
                       );
                       confirmationCodeController.clear();
-                      AppNavigator.pop();
+                      Navinator.pushReplacementNamed(AppRouteNames.login);
                     },
                     child: const Text(AppStrings.confirm),
                   ),

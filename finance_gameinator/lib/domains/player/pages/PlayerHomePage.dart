@@ -2,8 +2,8 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
-class LobbyPage extends StatelessWidget {
-  const LobbyPage({super.key});
+class PlayerHomePage extends StatelessWidget {
+  const PlayerHomePage({super.key});
 
   @override
   Widget build(BuildContext context) {
