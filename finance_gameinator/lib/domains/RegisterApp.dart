@@ -22,7 +22,7 @@ class RegisterApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       title: AppStrings.loginAndRegister,
       theme: AppTheme.themeData,
-      initialRoute: AppRouteNames.login,
+      initialRoute: AppRouteNames.playerHome,//initialRoute: AppRouteNames.login,
       scaffoldMessengerKey: Snackbar.key,
       navigatorKey: Navinator.key,
       onGenerateRoute: AppRoutes.generateRoute,

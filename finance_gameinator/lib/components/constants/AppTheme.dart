@@ -85,6 +85,14 @@ class AppTheme {
     letterSpacing: 0.5,
   );
 
+  static const TextStyle titleNormal = TextStyle(
+    fontWeight: FontWeight.bold,
+    color: Colors.white,
+    fontSize: 20,
+    letterSpacing: 0.5,
+  );
+
+
   static const TextStyle bodySmall = TextStyle(
     color: Colors.grey,
     letterSpacing: 0.5,
