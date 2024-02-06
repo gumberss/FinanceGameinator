@@ -2,6 +2,7 @@ import 'package:finance_gameinator/components/lists/ExpandableList.dart';
 import 'package:finance_gameinator/components/navigation/AppRouteNames.dart';
 import 'package:finance_gameinator/components/navigation/AppRoutes.dart';
 import 'package:finance_gameinator/components/navigation/Navinator.dart';
+import 'package:finance_gameinator/components/widgets/Buttoninator.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
@@ -90,88 +91,22 @@ class PlayerHomePage extends StatelessWidget {
                 color: AppColors.lightGray,
                 child: Column(
                   children: [
-                    Expanded(
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: Container(
-                              width: double.infinity,
-                              height: double.infinity,
-                              margin: EdgeInsets.only(top: 10, bottom: 10),
-                              child: ElevatedButton(
-                                onPressed: () {
-                                  // Handle player joining the game
-                                  print('Player joined the game!');
-                                },
-                                style: ButtonStyle(
-                                  backgroundColor:
-                                      MaterialStateProperty.all(Colors.blue),
-                                  elevation: MaterialStateProperty.all(2.0),
-                                  shape: MaterialStateProperty.all<
-                                      RoundedRectangleBorder>(
-                                    RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(16.0),
-                                    ),
-                                  ),
-                                ),
-                                child: Padding(
-                                  padding: const EdgeInsets.all(16.0),
-                                  child: Text(
-                                    'Create Game',
-                                    style: TextStyle(
-                                      fontSize: 20.0,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.black,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
+                    Buttoninator(
+                      onPressed: () {
+                        // Handle player joining the game
+                        print('Player joined the game!');
+                      },
+                      buttonText: 'Create Game',
+                      expanded: true,
                     ),
-                    Expanded(
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: Container(
-                              width: double.infinity,
-                              height: double.infinity,
-                              margin: EdgeInsets.only(top: 10, bottom: 10),
-                              child: ElevatedButton(
-                                onPressed: () {
-                                  // Handle player joining the game
-                                  print('Player joined the game!');
-                                },
-                                style: ButtonStyle(
-                                  backgroundColor:
-                                      MaterialStateProperty.all(Colors.blue),
-                                  elevation: MaterialStateProperty.all(2.0),
-                                  shape: MaterialStateProperty.all<
-                                      RoundedRectangleBorder>(
-                                    RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(16.0),
-                                    ),
-                                  ),
-                                ),
-                                child: Padding(
-                                  padding: const EdgeInsets.all(16.0),
-                                  child: Text(
-                                    'Join a Game',
-                                    style: TextStyle(
-                                      fontSize: 20.0,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.black,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
+                    Buttoninator(
+                      onPressed: () {
+                        // Handle player joining the game
+                        print('Player joined the game!');
+                      },
+                      buttonText: 'Join a Game',
+                      expanded: true,
+                    )
                   ],
                 ),
               ),
