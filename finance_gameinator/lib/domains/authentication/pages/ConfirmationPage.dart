@@ -54,8 +54,8 @@ class _ConfirmationPageState extends State<ConfirmationPage> {
       body: ListView(
         padding: EdgeInsets.zero,
         children: [
-          const GradientBackground(
-            children: [
+           GradientBackground(
+            children: const [
               Text(
                 AppStrings.confirmYourAccount,
                 style: AppTheme.titleLarge,

@@ -1,12 +1,12 @@
 import 'package:finance_gameinator/domains/RegisterModuleBase.dart';
+import 'package:finance_gameinator/domains/game/pages/GameRoomPage.dart';
 import '../../components/navigation/AppRouteNames.dart';
 import '../../components/navigation/AppRoutes.dart';
-import 'pages/PlayerHomePage.dart';
 
-class PlayerRegister implements RegisterModuleBase {
+class GameRegister implements RegisterModuleBase {
   @override
   void registerRoutes() {
-    AppRoutes.registerPage(AppRouteNames.playerHome, (settings) => PlayerHomePage());
+    AppRoutes.registerPage(AppRouteNames.gameRoom, (settings) => GameRoomPage());
   }
 }
 
