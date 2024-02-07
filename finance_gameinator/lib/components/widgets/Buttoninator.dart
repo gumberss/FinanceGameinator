@@ -6,10 +6,12 @@ class Buttoninator extends StatelessWidget {
 
   Color buttonColor;
   Color textColor;
-
-  bool expanded;
-
-  double? height;
+  bool fullExpanded;
+  double height;
+  double width;
+  double fontSize;
+  double buttonTextPadding;
+  EdgeInsets buttonMargin;
 
   Buttoninator(
       {super.key,
@@ -17,8 +19,12 @@ class Buttoninator extends StatelessWidget {
       required this.onPressed,
       this.buttonColor = Colors.blue,
       this.textColor = Colors.black,
-      this.expanded = false,
-      this.height});
+      this.fullExpanded = false,
+      this.height = double.infinity,
+      this.width = double.infinity,
+      this.fontSize = 20.0,
+      this.buttonTextPadding = 16.0,
+      this.buttonMargin = const EdgeInsets.all(10)});
 
   @override
   Widget build(BuildContext context) {
@@ -34,27 +40,25 @@ class Buttoninator extends StatelessWidget {
         ),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: EdgeInsets.all(buttonTextPadding),
         child: Text(
+          textAlign: TextAlign.center,
           buttonText,
           style: TextStyle(
-            fontSize: 20.0,
+            fontSize: fontSize,
             fontWeight: FontWeight.bold,
             color: textColor,
           ),
-        ),
+        )
       ),
     );
 
     var container = Container(
-        width: double.infinity,
-        height: height != null ? height: double.infinity,
-        margin: EdgeInsets.only(top: 10, bottom: 10),
-        child: button);
+        width: width, height: height, margin: buttonMargin, child: button);
 
-    return expanded
+    return fullExpanded
         ? Expanded(
-            child: Row(
+            child: Column(
               children: [
                 Expanded(
                   child: container,
