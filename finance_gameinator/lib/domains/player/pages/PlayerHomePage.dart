@@ -1,14 +1,13 @@
 import 'package:finance_gameinator/components/lists/ExpandableList.dart';
 import 'package:finance_gameinator/components/navigation/AppRouteNames.dart';
-import 'package:finance_gameinator/components/navigation/AppRoutes.dart';
 import 'package:finance_gameinator/components/navigation/Navinator.dart';
+import 'package:finance_gameinator/components/widgets/Buttoninator.dart';
+import 'package:finance_gameinator/components/widgets/SimpleInputOverlay.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 import '../../../components/constants/AppCollors.dart';
 import '../../../components/constants/AppStrings.dart';
-import '../../../components/constants/AppTheme.dart';
-import '../../../components/widgets/GradientBackground.dart';
 
 class Player {
   String name;
@@ -90,88 +89,44 @@ class PlayerHomePage extends StatelessWidget {
                 color: AppColors.lightGray,
                 child: Column(
                   children: [
-                    Expanded(
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: Container(
-                              width: double.infinity,
-                              height: double.infinity,
-                              margin: EdgeInsets.only(top: 10, bottom: 10),
-                              child: ElevatedButton(
-                                onPressed: () {
-                                  // Handle player joining the game
-                                  print('Player joined the game!');
-                                },
-                                style: ButtonStyle(
-                                  backgroundColor:
-                                      MaterialStateProperty.all(Colors.blue),
-                                  elevation: MaterialStateProperty.all(2.0),
-                                  shape: MaterialStateProperty.all<
-                                      RoundedRectangleBorder>(
-                                    RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(16.0),
-                                    ),
-                                  ),
-                                ),
-                                child: Padding(
-                                  padding: const EdgeInsets.all(16.0),
-                                  child: Text(
-                                    'Create Game',
-                                    style: TextStyle(
-                                      fontSize: 20.0,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.black,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
+                    Buttoninator(
+                      onPressed: () {
+                        showDialog(
+                          context: context,
+                          builder: (BuildContext context) {
+                            return SimpleInputOverlay(
+                              title: 'Create a Game',
+                              labelText: 'Game Name',
+                              submitButtonText: "Create the Game",
+                              onSubmitPressed: (gameName) async {
+                                return null;
+                              },
+                            );
+                          },
+                        );
+                      },
+                      buttonText: 'Create Game',
+                      fullExpanded: true,
                     ),
-                    Expanded(
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: Container(
-                              width: double.infinity,
-                              height: double.infinity,
-                              margin: EdgeInsets.only(top: 10, bottom: 10),
-                              child: ElevatedButton(
-                                onPressed: () {
-                                  // Handle player joining the game
-                                  print('Player joined the game!');
+                    Buttoninator(
+                        onPressed: () {
+                          showDialog(
+                            context: context,
+                            builder: (BuildContext context) {
+                              return SimpleInputOverlay(
+                                title: 'Join a Game',
+                                labelText: 'Game Code',
+                                submitButtonText: "Join the Game",
+                                onSubmitPressed: (gameName) async {
+                                  return null;
                                 },
-                                style: ButtonStyle(
-                                  backgroundColor:
-                                      MaterialStateProperty.all(Colors.blue),
-                                  elevation: MaterialStateProperty.all(2.0),
-                                  shape: MaterialStateProperty.all<
-                                      RoundedRectangleBorder>(
-                                    RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(16.0),
-                                    ),
-                                  ),
-                                ),
-                                child: Padding(
-                                  padding: const EdgeInsets.all(16.0),
-                                  child: Text(
-                                    'Join a Game',
-                                    style: TextStyle(
-                                      fontSize: 20.0,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.black,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
+                              );
+                            },
+                          );
+                        },
+                      buttonText: 'Join a Game',
+                      fullExpanded: true,
+                    )
                   ],
                 ),
               ),
