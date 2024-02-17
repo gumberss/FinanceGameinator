@@ -30,12 +30,12 @@ class ExpandableList<T> extends StatelessWidget {
     }).toList();
 
     return Expanded(
+      flex: 2,
       child: ListView.builder(
           itemCount: expansionTiles.length,
           itemBuilder: (context, index) {
             return expansionTiles[index];
           }),
-      flex: 2,
     );
   }
 
@@ -85,8 +85,6 @@ class ExpandableList<T> extends StatelessWidget {
                     );
                   } else {
                     var items = snapshot.data!;
-
-                    child:
                     return ListView.builder(
                         shrinkWrap: true,
                         itemCount: items.length,
