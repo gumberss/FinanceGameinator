@@ -4,7 +4,9 @@ import '../../../components/constants/AppCollors.dart';
 import '../../../components/constants/AppStrings.dart';
 
 class GameRoomPage extends StatelessWidget {
-  GameRoomPage({super.key});
+  String gameId;
+
+  GameRoomPage({super.key, required this.gameId});
 
   @override
   Widget build(BuildContext context) {

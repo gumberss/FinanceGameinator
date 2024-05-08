@@ -161,6 +161,7 @@ class UserService {
     user.email = email;
     user.name = name;
     user.confirmed = data.userConfirmed ?? false;
+    user.id = data.userSub;
 
     return Result(user);
   }

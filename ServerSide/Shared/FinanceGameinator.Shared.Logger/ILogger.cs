@@ -1,6 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 
-namespace FinanceGameinator.Players.IoC.Logger
+namespace FinanceGameinator.Shared.Logger
 {
     public interface ILogger
     {

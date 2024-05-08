@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net6.0</TargetFramework>
@@ -16,6 +16,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\..\Shared\FinanceGameinator.Shared.Logger\FinanceGameinator.Shared.Logger.csproj" />
     <ProjectReference Include="..\FinanceGameinator.Players.Db\FinanceGameinator.Players.Db.csproj" />
     <ProjectReference Include="..\FinanceGameinator.Players.Domain\FinanceGameinator.Players.Domain.csproj" />
     <ProjectReference Include="..\FinanceGameinator.Players.UseCases\FinanceGameinator.Players.UseCases.csproj" />

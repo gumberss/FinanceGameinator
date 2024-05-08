@@ -22,7 +22,8 @@ class RegisterApp extends StatelessWidget {
     return MaterialApp(
       title: AppStrings.loginAndRegister,
       theme: AppTheme.themeData,
-      initialRoute: AppRouteNames.playerHome,//initialRoute: AppRouteNames.login,
+      //initialRoute: AppRouteNames.playerHome,
+      initialRoute: AppRouteNames.login,
       scaffoldMessengerKey: Snackbar.key,
       navigatorKey: Navinator.key,
       onGenerateRoute: AppRoutes.generateRoute,

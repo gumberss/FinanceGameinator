@@ -52,7 +52,10 @@ class _SimpleInputOverlayState extends State<SimpleInputOverlay> {
             children: [
               Expanded(
                   child: Buttoninator(
-                onPressed: () async => await widget.onSubmitPressed(_inputController.text),
+                onPressed: () {
+                  if (!context.mounted) return;
+                  Navigator.of(context).pop();
+                },
                 fontSize: 14,
                 buttonTextPadding: 0,
                 height: 75,
@@ -63,6 +66,9 @@ class _SimpleInputOverlayState extends State<SimpleInputOverlay> {
                   child: Buttoninator(
                 onPressed: () async {
                   String inputText = _inputController.text;
+
+                  if(inputText == null || inputText.isEmpty) return;
+
                   var errors = await widget.onSubmitPressed(inputText);
 
                   if (!context.mounted) return;

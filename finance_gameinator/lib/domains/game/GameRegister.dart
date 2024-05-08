@@ -6,7 +6,10 @@ import '../../components/navigation/AppRoutes.dart';
 class GameRegister implements RegisterModuleBase {
   @override
   void registerRoutes() {
-    AppRoutes.registerPage(AppRouteNames.gameRoom, (settings) => GameRoomPage());
+    AppRoutes.registerPage(
+        AppRouteNames.gameRoom,
+        (settings) => GameRoomPage(
+              gameId: settings.arguments as String,
+            ));
   }
 }
-

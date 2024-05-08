@@ -2,9 +2,9 @@
 using FinanceGameinator.Players.Db.Interfaces.Cross;
 using FinanceGameinator.Players.Db.Interfaces.Repositories;
 using FinanceGameinator.Players.Db.Repositories;
-using FinanceGameinator.Players.IoC.Logger;
 using FinanceGameinator.Players.UseCases.Interfaces.UseCases;
 using FinanceGameinator.Players.UseCases.UseCases;
+using FinanceGameinator.Shared.Logger;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace FinanceGameinator.Players.IoC.ServiceCollectionProvider
