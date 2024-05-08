@@ -36,6 +36,18 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FinanceGameinator.Players.U
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FinanceGameinator.Players.IoC", "Modules\Players\FinanceGameinator.Players.IoC\FinanceGameinator.Players.IoC.csproj", "{DF425EDA-3C53-427D-8A56-50BF21FFC3B2}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FinanceGameinator.Games.UseCases", "Modules\Games\FinanceGameinator.Games.UseCases\FinanceGameinator.Games.UseCases.csproj", "{83486439-992E-4DB7-889F-F9791EA7DA33}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FinanceGameinator.Games.IoC", "Modules\Games\FinanceGameinator.Games.IoC\FinanceGameinator.Games.IoC.csproj", "{6022B0D0-0A39-49F6-805B-30AFE686010F}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FinanceGameinator.Games.Domain", "Modules\Games\FinanceGameinator.Games.Domain\FinanceGameinator.Games.Domain.csproj", "{FD8EDF96-0BAF-4010-A63C-7948E7981572}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FinanceGameinator.Games.Db", "Modules\Games\FinanceGameinator.Games.Db\FinanceGameinator.Games.Db.csproj", "{8522CF25-F25E-402A-8483-69F94E892485}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Shared", "Shared", "{3F805AF5-74EC-4C9E-8F8F-9DB5A65E4B1E}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FinanceGameinator.Shared.Logger", "Shared\FinanceGameinator.Shared.Logger\FinanceGameinator.Shared.Logger.csproj", "{C486FC80-902D-4A86-99C5-F345F34A9A2D}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -82,6 +94,26 @@ Global
 		{DF425EDA-3C53-427D-8A56-50BF21FFC3B2}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{DF425EDA-3C53-427D-8A56-50BF21FFC3B2}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{DF425EDA-3C53-427D-8A56-50BF21FFC3B2}.Release|Any CPU.Build.0 = Release|Any CPU
+		{83486439-992E-4DB7-889F-F9791EA7DA33}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{83486439-992E-4DB7-889F-F9791EA7DA33}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{83486439-992E-4DB7-889F-F9791EA7DA33}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{83486439-992E-4DB7-889F-F9791EA7DA33}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6022B0D0-0A39-49F6-805B-30AFE686010F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6022B0D0-0A39-49F6-805B-30AFE686010F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6022B0D0-0A39-49F6-805B-30AFE686010F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6022B0D0-0A39-49F6-805B-30AFE686010F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FD8EDF96-0BAF-4010-A63C-7948E7981572}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FD8EDF96-0BAF-4010-A63C-7948E7981572}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FD8EDF96-0BAF-4010-A63C-7948E7981572}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FD8EDF96-0BAF-4010-A63C-7948E7981572}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8522CF25-F25E-402A-8483-69F94E892485}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8522CF25-F25E-402A-8483-69F94E892485}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8522CF25-F25E-402A-8483-69F94E892485}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8522CF25-F25E-402A-8483-69F94E892485}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C486FC80-902D-4A86-99C5-F345F34A9A2D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C486FC80-902D-4A86-99C5-F345F34A9A2D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C486FC80-902D-4A86-99C5-F345F34A9A2D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C486FC80-902D-4A86-99C5-F345F34A9A2D}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -99,6 +131,11 @@ Global
 		{D37FE64C-554E-4409-B853-ED3D6C4E8A12} = {C5554483-490D-4956-AA7A-6AA0D8CA13CA}
 		{952553CC-2869-4457-8B24-86F05131F1B9} = {C5554483-490D-4956-AA7A-6AA0D8CA13CA}
 		{DF425EDA-3C53-427D-8A56-50BF21FFC3B2} = {C5554483-490D-4956-AA7A-6AA0D8CA13CA}
+		{83486439-992E-4DB7-889F-F9791EA7DA33} = {18858147-8248-4988-B502-12B43CA1F122}
+		{6022B0D0-0A39-49F6-805B-30AFE686010F} = {18858147-8248-4988-B502-12B43CA1F122}
+		{FD8EDF96-0BAF-4010-A63C-7948E7981572} = {18858147-8248-4988-B502-12B43CA1F122}
+		{8522CF25-F25E-402A-8483-69F94E892485} = {18858147-8248-4988-B502-12B43CA1F122}
+		{C486FC80-902D-4A86-99C5-F345F34A9A2D} = {3F805AF5-74EC-4C9E-8F8F-9DB5A65E4B1E}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {C1009707-9210-4229-8963-1473BE1FE1F9}

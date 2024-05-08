@@ -4,7 +4,7 @@ using FinanceGameinator.Players.IoC.ServiceCollectionProvider;
 using FinanceGameinator.Players.UseCases.Interfaces.UseCases;
 using Microsoft.Extensions.DependencyInjection;
 using System.Net;
-using Logger = FinanceGameinator.Players.IoC.Logger;
+using Logger = FinanceGameinator.Shared.Logger;
 
 namespace FinanceGameinator.Players.Api.Ports
 {
