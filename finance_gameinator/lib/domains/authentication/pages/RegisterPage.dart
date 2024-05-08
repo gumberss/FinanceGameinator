@@ -210,8 +210,6 @@ class _RegisterPageState extends State<RegisterPage> {
                       return FilledButton(
                         onPressed: isValid
                             ? () async {
-                                var currentContext = context;
-
                                 _formKey.currentState?.save();
                                 var result = await UserService(userPool).signUp(
                                     emailController.text,
@@ -229,14 +227,15 @@ class _RegisterPageState extends State<RegisterPage> {
                                 );
 
                                 if (!context.mounted) return;
+                                //todo: register player to the database
 
                                 if (!user.confirmed) {
                                   Navinator.pushNamed(AppRouteNames.confirmation, arguments:  user.email!);
                                 }
-
                                 Snackbar.showSnackBar(
                                   AppStrings.userRegistered,
                                 );
+
                                 nameController.clear();
                                 emailController.clear();
                                 passwordController.clear();

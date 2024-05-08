@@ -3,6 +3,9 @@ import 'package:finance_gameinator/components/navigation/AppRouteNames.dart';
 import 'package:finance_gameinator/components/navigation/Navinator.dart';
 import 'package:finance_gameinator/components/widgets/Buttoninator.dart';
 import 'package:finance_gameinator/components/widgets/SimpleInputOverlay.dart';
+import 'package:finance_gameinator/domains/authentication/models/User.dart';
+import 'package:finance_gameinator/domains/authentication/ports/UserService.dart';
+import 'package:finance_gameinator/domains/authentication/storage/UserStorage.dart';
 import 'package:finance_gameinator/domains/player/models/GameOverview.dart';
 import 'package:finance_gameinator/domains/player/models/PlayerOverview.dart';
 import 'package:finance_gameinator/domains/player/ports/PlayerGameHttpClient.dart';
@@ -31,8 +34,12 @@ class PlayerHomePage extends StatelessWidget {
   Widget build(BuildContext context) {
     String playerId = "";
 
+    var retrievePlayerDetails = UserStorage()
+        .getUser()
+        .then((value) => PlayerHttpClient().getOverview(value!.id!.toString()));
+
     return FutureBuilder(
-      future: PlayerHttpClient().getOverview(playerId),
+      future: retrievePlayerDetails,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return defaultScaffold(
@@ -89,8 +96,9 @@ class PlayerOverviewContainer extends StatelessWidget {
                       padding: const EdgeInsets.only(bottom: 10, top: 10),
                       child: Text(x.name),
                     ),
-                    onExpandableItemClicked: (x) =>
-                        Navinator.pushNamed(AppRouteNames.gameRoom),
+                    onExpandableItemClicked: (x) => Navinator.pushNamed(
+                        AppRouteNames.gameRoom,
+                        arguments: x.id),
                     itemsBuilder: (x) async => [
                       ListTile(
                           title: Container(
@@ -131,12 +139,13 @@ class PlayerOverviewContainer extends StatelessWidget {
                               return null;
                             }
 
-                            var result = await PlayerGameHttpClient().createGame(gameName);
+                            var result = await PlayerGameHttpClient()
+                                .createGame(gameName);
 
-                            if(result.success()){
-                              //todo: open game room giving the id "result.data"
+                            if (result.success()) {
+                              Navinator.pushNamed(AppRouteNames.gameRoom,
+                                  arguments: result.data!);
                             }
-
                           },
                         );
                       },

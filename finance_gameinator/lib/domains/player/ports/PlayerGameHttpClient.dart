@@ -19,9 +19,10 @@ class PlayerGameHttpClient {
   }
 
   Future<HttpResponseData<String?>> createGame(String gameName) async {
-    return await tryRequest(
-        client.getUri(Uri.http(baseUrl, basePath),
-            options: defaultOptions),
-            (response) => HttpResponseData(response.statusCode!, response.data["id"].toString()));
+    return HttpResponseData(200, "123");
+    //return await tryRequest(
+    //  client.getUri(Uri.http(baseUrl, basePath),
+    //      options: defaultOptions),
+    //      (response) => HttpResponseData(response.statusCode!, response.data["id"].toString()));
   }
 }

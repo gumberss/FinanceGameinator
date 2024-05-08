@@ -36,6 +36,7 @@ Future<HttpResponseData<T?>> tryRequest<T>(Future<Response> request,
     debugPrint(e.toString());
     return HttpResponseData(500, null);
   }
+
   if (response.statusCode == 500) {
     return HttpResponseData(response.statusCode!, null);
   }
@@ -52,5 +53,6 @@ Future<HttpResponseData<T?>> tryRequest<T>(Future<Response> request,
   if (response.statusCode == 404) {
     return HttpResponseData(response.statusCode!, null);
   }
+
   return onSuccess(response);
 }

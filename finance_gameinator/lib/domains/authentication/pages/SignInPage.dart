@@ -11,6 +11,7 @@ import '../../../components/navigation/AppRouteNames.dart';
 import '../../../components/navigation/Navinator.dart';
 import '../../../components/snackbar/Snackbar.dart';
 import '../../../components/widgets/GradientBackground.dart';
+import '../storage/UserStorage.dart';
 
 /// This page was created based on the https://github.com/dhyash-simform/login_and_register_app repository
 class SignInPage extends StatefulWidget {
@@ -173,6 +174,8 @@ class _SignInPageState extends State<SignInPage> {
                                 Snackbar.showSnackBar(
                                   AppStrings.loggedIn,
                                 );
+
+                                await UserStorage().storeUser(result.value!);
 
                                 Navinator.pushNamed(AppRouteNames.playerHome);
 
