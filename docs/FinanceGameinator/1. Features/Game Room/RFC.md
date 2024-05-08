@@ -9,7 +9,7 @@ The initial iteration of this feature is designed with simplicity in mind.
 
 <img src="https://github.com/gumberss/FinanceControlinator/assets/38296002/70cea15a-834e-4d8f-8965-09a942f62897"/>
 
-This screen is divided into three main sections, each of which will be discussed in detail below. Rather than delving into the intricacies of how the database will behave within these sections at this moment, a comprehensive explanation will be provided in the [[ADR]] document.
+This screen is divided into three main sections, each of which will be discussed in detail below. Rather than delving into the intricacies of how the database will behave within these sections at this moment, a comprehensive explanation will be provided in the [[Execution Planning]] document.
 
 ### Player Games
 
@@ -44,7 +44,7 @@ The game room feature enables players to assemble, organize, and invite others t
 
 The most challenging aspect of this screen lies in socket management, as the server must broadcast updates to all connected players whenever a new player joins or leaves. Additionally, events such as the admin reordering players or initiating the game trigger broadcasts to ensure all players are promptly informed of these changes.
 
-All the details regarding the functioning of the socket and the interactions between DynamoDB and the socket will be explained in the [[ADR]].
+All the details regarding the functioning of the socket and the interactions between DynamoDB and the socket will be explained in the [[Execution Planning]].
 
 ## Out of scope
 
