@@ -32,7 +32,12 @@ namespace FinanceGameinator.Players.Db.Repositories
             {
                 var putRequest = PlayerAdapter.ToPlayerRegistrationRequest(registrationData);
 
-                await _dbConnection.PutAsync(putRequest);
+                var result = await _dbConnection.PutAsync(putRequest);
+
+                if (result.IsFailure && result.Error.InnerException?.GetType() != typeof(ConditionalCheckFailedException))
+                {
+                    return result.Error;
+                }
 
                 return registrationData;
             }

@@ -12,7 +12,7 @@ using Logger = FinanceGameinator.Shared.Logger;
 
 namespace FinanceGameinator.Players.Api.Ports
 {
-    internal class HttpServer
+    public class HttpServer
     {
         ServiceCollection _serviceCollection;
 
@@ -23,6 +23,7 @@ namespace FinanceGameinator.Players.Api.Ports
 
         public async Task<APIGatewayProxyResponse> Get(APIGatewayProxyRequest request, ILambdaContext context)
         {
+            
             if (!request.PathParameters.TryGetValue("id", out String? stringId))
             {
                 return new APIGatewayProxyResponse
