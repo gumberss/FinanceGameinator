@@ -12,5 +12,10 @@ namespace FinanceGameinator.Players.Db.Cross
         public Task<Result<QueryResponse, BusinessException>> QueryAsync(QueryRequest request, CancellationToken cancellationToken = default)
              => Result.Try(_dbClient.QueryAsync(request, cancellationToken));
 
+        public Task<Result<PutItemResponse, BusinessException>> PutAsync(PutItemRequest request, CancellationToken cancellationToken = default)
+             => Result.Try(_dbClient.PutItemAsync(request, cancellationToken));
+
+
+
     }
 }

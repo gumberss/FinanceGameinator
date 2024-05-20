@@ -1,7 +1,7 @@
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 class JwtService {
-  get token async {
+  get jwtToken async {
     const storage = FlutterSecureStorage();
     return await storage.read(key: 'jwt');
   }
@@ -16,7 +16,7 @@ class JwtService {
     await storage.write(key: 'userId', value: userId);
   }
 
-  Future store(String token) async {
+  Future storeJwtToken(String token) async {
     const storage = FlutterSecureStorage();
     await storage.write(key: 'jwt', value: token);
   }

@@ -7,6 +7,7 @@ class User {
   String? name;
   String? password;
   String? id;
+  String? accessToken;
   bool confirmed = false;
   bool hasAccess = false;
 

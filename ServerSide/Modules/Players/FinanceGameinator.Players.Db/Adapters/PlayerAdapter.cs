@@ -1,4 +1,5 @@
-﻿using Amazon.DynamoDBv2.Model;
+﻿using Amazon.DynamoDBv2.DocumentModel;
+using Amazon.DynamoDBv2.Model;
 using CleanHandling;
 using FinanceGameinator.Players.Domain.Models;
 using System.Net;
@@ -42,6 +43,19 @@ namespace FinanceGameinator.Players.Db.Adapters
 
             return new Player(playerId, playerMetadata["Name"].S, games);
         }
+
+        internal static Result<PutItemRequest, BusinessException> ToPlayerRegistrationRequest(PlayerRegistration registrationData)
+            => new PutItemRequest
+            {
+                TableName = tableName,
+                Item = new Dictionary<string, AttributeValue>()
+                {
+                    { PK_COLL, new AttributeValue { S = $"{PLAYER_PREFIX}{registrationData.Id}" }},
+                    { SK_COLL, new AttributeValue { S = $"{PLAYER_PREFIX}{registrationData.Id}" }},
+                    { "Name", new AttributeValue { S = registrationData.Name }},
+                    //https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/LowLevelDotNetItemCRUD.html
+                }
+            };
 
         private static Guid FromKey(AttributeValue attrValue)
             => Guid.Parse(attrValue.S.Replace(GAME_PREFIX, String.Empty));

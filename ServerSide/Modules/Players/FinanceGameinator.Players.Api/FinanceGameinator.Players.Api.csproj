@@ -26,4 +26,8 @@
 	  <ProjectReference Include="..\FinanceGameinator.Players.UseCases\FinanceGameinator.Players.UseCases.csproj" />
 	</ItemGroup>
 
+	<ItemGroup>
+	  <Folder Include="Wires\Out\" />
+	</ItemGroup>
+
 </Project>

@@ -4,6 +4,7 @@ using FinanceGameinator.Players.Db.Interfaces.Cross;
 using FinanceGameinator.Players.Db.Interfaces.Repositories;
 using FinanceGameinator.Players.Domain.Models;
 using Microsoft.Extensions.Logging;
+using System.Text.Json;
 
 namespace FinanceGameinator.Players.Db.Repositories
 {
@@ -23,5 +24,11 @@ namespace FinanceGameinator.Players.Db.Repositories
             => await PlayerAdapter.ToGetPlayerByIdRequest(playerId)
                 .Then(queryRequest => _dbConnection.QueryAsync(queryRequest))
                 .Then(response => PlayerAdapter.ToPlayer(playerId, response.Items));
+
+        public async Task<Result<PlayerRegistration, BusinessException>> Register(PlayerRegistration registrationData)
+            => await PlayerAdapter.ToPlayerRegistrationRequest(registrationData)
+                .Then(putRequest => _dbConnection.PutAsync(putRequest))
+                .Then(_ => registrationData);
+
     }
 }

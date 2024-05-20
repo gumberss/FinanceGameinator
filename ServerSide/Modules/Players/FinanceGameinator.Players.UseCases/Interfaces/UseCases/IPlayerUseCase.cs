@@ -5,6 +5,8 @@ namespace FinanceGameinator.Players.UseCases.Interfaces.UseCases
 {
     public interface IPlayerUseCase
     {
-        Task<Result<Player, BusinessException>> FindPlayer(Guid playerId);
+        Task<Result<Player, BusinessException>> Find(Guid playerId);
+
+        Task<Result<PlayerRegistration, BusinessException>> Register(PlayerRegistration registrationData);
     }
 }
