@@ -183,6 +183,10 @@ class _SignInPageState extends State<SignInPage> {
                                 await JwtService().storeJwtToken(user.accessToken!);
                                 var registrationResult = await PlayerService().registerPlayer(user.id!, user.name!);
 
+                                if(!registrationResult.success()){
+                                  return;
+                                }
+
                                 Navinator.pushNamed(AppRouteNames.playerHome);
 
                                 emailController.clear();

@@ -1,4 +1,5 @@
-﻿using CleanHandling;
+﻿using Amazon.DynamoDBv2.Model;
+using CleanHandling;
 using FinanceGameinator.Players.Db.Adapters;
 using FinanceGameinator.Players.Db.Interfaces.Cross;
 using FinanceGameinator.Players.Db.Interfaces.Repositories;
@@ -26,9 +27,24 @@ namespace FinanceGameinator.Players.Db.Repositories
                 .Then(response => PlayerAdapter.ToPlayer(playerId, response.Items));
 
         public async Task<Result<PlayerRegistration, BusinessException>> Register(PlayerRegistration registrationData)
-            => await PlayerAdapter.ToPlayerRegistrationRequest(registrationData)
-                .Then(putRequest => _dbConnection.PutAsync(putRequest))
-                .Then(_ => registrationData);
+        {
+            try
+            {
+                var putRequest = PlayerAdapter.ToPlayerRegistrationRequest(registrationData);
+
+                await _dbConnection.PutAsync(putRequest);
+
+                return registrationData;
+            }
+            catch (ConditionalCheckFailedException ex)
+            {
+                return registrationData;
+            }
+            catch (Exception ex)
+            {
+                return Result.FromError<PlayerRegistration>(new BusinessException(System.Net.HttpStatusCode.InternalServerError, ex.Message));
+            }
+        }
 
     }
 }

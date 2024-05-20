@@ -2,6 +2,8 @@
 using Amazon.DynamoDBv2.Model;
 using CleanHandling;
 using FinanceGameinator.Players.Domain.Models;
+using System.Collections.Concurrent;
+using System.Globalization;
 using System.Net;
 
 namespace FinanceGameinator.Players.Db.Adapters
@@ -54,6 +56,12 @@ namespace FinanceGameinator.Players.Db.Adapters
                     { SK_COLL, new AttributeValue { S = $"{PLAYER_PREFIX}{registrationData.Id}" }},
                     { "Name", new AttributeValue { S = registrationData.Name }},
                     //https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/LowLevelDotNetItemCRUD.html
+                },
+                ConditionExpression = "attribute_not_exists(#pk) AND attribute_not_exists(#sk)",
+                ExpressionAttributeNames = new Dictionary<string, string>
+                {
+                    { "#pk", PK_COLL },
+                    { "#sk", SK_COLL }
                 }
             };
 
