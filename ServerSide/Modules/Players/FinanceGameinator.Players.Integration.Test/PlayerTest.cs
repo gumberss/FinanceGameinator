@@ -97,5 +97,56 @@ namespace FinanceGameinator.Players.Integration.Test
                 .Should()
                 .BeEquivalentTo(new PlayerWireOut(playerId, playerName, new List<GameWireOut>()));
         }
+
+        [Fact]
+        public void Should_not_register_the_player_twice()
+        {
+            var playerId = Guid.NewGuid();
+            var playerName = "John";
+
+            var wire = new PlayerRegistrationWire
+            {
+                Id = playerId,
+                Name = playerName
+            };
+
+            var response = _server.Register(new APIGatewayProxyRequest()
+            {
+                Body = JsonSerializer.Serialize(wire),
+            }, new LambdaContext())
+            .Result;
+
+            response.StatusCode.Should().Be(200);
+            JsonSerializer.Deserialize<PlayerRegistrationWire>(response.Body)
+                .Should().BeEquivalentTo(wire);
+
+            wire.Name = "Banana";
+
+            var secondResponse = _server.Register(new APIGatewayProxyRequest()
+            {
+                Body = JsonSerializer.Serialize(wire),
+            }, new LambdaContext())
+            .Result;
+
+            secondResponse.StatusCode.Should().Be(200);
+
+            var pathParams = new Dictionary<String, String>
+            {
+                { "id", playerId.ToString() }
+            };
+
+            var getResponse = _server
+            .Get(new APIGatewayProxyRequest()
+            {
+                PathParameters = pathParams
+            }, new LambdaContext())
+            .Result;
+
+            getResponse.StatusCode.Should().Be(200);
+
+            JsonSerializer.Deserialize<PlayerWireOut>(getResponse.Body)
+                .Should()
+                .BeEquivalentTo(new PlayerWireOut(playerId, playerName, new List<GameWireOut>()));
+        }
     }
 }

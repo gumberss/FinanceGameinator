@@ -28,27 +28,15 @@ namespace FinanceGameinator.Players.Db.Repositories
 
         public async Task<Result<PlayerRegistration, BusinessException>> Register(PlayerRegistration registrationData)
         {
-            try
-            {
-                var putRequest = PlayerAdapter.ToPlayerRegistrationRequest(registrationData);
+            var result = await PlayerAdapter.ToPlayerRegistrationRequest(registrationData)
+                .Then(putRequest => _dbConnection.PutAsync(putRequest));
 
-                var result = await _dbConnection.PutAsync(putRequest);
-
-                if (result.IsFailure && result.Error.InnerException?.GetType() != typeof(ConditionalCheckFailedException))
-                {
-                    return result.Error;
-                }
-
-                return registrationData;
-            }
-            catch (ConditionalCheckFailedException ex)
+            if (result.IsFailure && result.Error.InnerException?.GetType() != typeof(ConditionalCheckFailedException))
             {
-                return registrationData;
+                return result.Error;
             }
-            catch (Exception ex)
-            {
-                return Result.FromError<PlayerRegistration>(new BusinessException(System.Net.HttpStatusCode.InternalServerError, ex.Message));
-            }
+
+            return registrationData;
         }
 
     }
