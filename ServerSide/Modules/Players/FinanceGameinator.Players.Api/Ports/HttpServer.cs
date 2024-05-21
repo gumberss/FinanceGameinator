@@ -1,6 +1,7 @@
 ﻿using Amazon.Lambda.APIGatewayEvents;
 using Amazon.Lambda.Core;
 using CleanHandling;
+using FinanceGameinator.Players.Api.Adapters;
 using FinanceGameinator.Players.Api.Wires.In;
 using FinanceGameinator.Players.Domain.Models;
 using FinanceGameinator.Players.IoC.ServiceCollectionProvider;
@@ -60,10 +61,13 @@ namespace FinanceGameinator.Players.Api.Ports
                             Headers = new Dictionary<string, string> { { "Content-Type", "text/plain" } }
                         };
                     }
+
+                    var wireOut = PlayerAdapter.ToWire(result.Value);
+
                     return new APIGatewayProxyResponse
                     {
                         StatusCode = 200,
-                        Body = result.Value.Name,
+                        Body = JsonSerializer.Serialize(wireOut),
                         Headers = new Dictionary<string, string> { { "Content-Type", "text/plain" } }
                     };
                 }
@@ -121,10 +125,13 @@ namespace FinanceGameinator.Players.Api.Ports
                             Headers = new Dictionary<string, string> { { "Content-Type", "text/plain" } }
                         };
                     }
+
+                    var wireOut = new PlayerRegistrationWire(result.Value.Id, result.Value.Name);
+
                     return new APIGatewayProxyResponse
                     {
                         StatusCode = 200,
-                        Body = JsonSerializer.Serialize(result.Value),
+                        Body = JsonSerializer.Serialize(wireOut),
                         Headers = new Dictionary<string, string> { { "Content-Type", "text/plain" } }
                     };
                 }
