@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net6.0</TargetFramework>
@@ -7,12 +7,13 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Folder Include="Adapters\" />
     <Folder Include="Cross\" />
-    <Folder Include="Interfaces\Cross\" />
-    <Folder Include="Interfaces\Adapters\" />
     <Folder Include="Wires\" />
-    <Folder Include="Repositories\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\Shared\FinanceGameinator.Shared.Db\FinanceGameinator.Shared.Db.csproj" />
+    <ProjectReference Include="..\FinanceGameinator.Games.Domain\FinanceGameinator.Games.Domain.csproj" />
   </ItemGroup>
 
 </Project>

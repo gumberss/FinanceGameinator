@@ -10,4 +10,12 @@
     <Folder Include="ServiceCollectionProvider\" />
   </ItemGroup>
 
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\Shared\FinanceGameinator.Shared.Logger\FinanceGameinator.Shared.Logger.csproj" />
+  </ItemGroup>
+
 </Project>

@@ -6,7 +6,17 @@ using System.Threading.Tasks;
 
 namespace FinanceGameinator.Games.Domain.Models
 {
-    internal class Game
+    public class Game
     {
+        public Game(Guid id, string name)
+        {
+            Id = id;
+            Name = name;
+        }
+
+        public Guid Id { get; set; }
+        public String Name { get; set; }
+
+
     }
 }

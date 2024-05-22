@@ -1,18 +1,18 @@
-using Amazon.Lambda.APIGatewayEvents;
-using FinanceGameinator.Players.Api.Ports;
-using FinanceGameinator.Players.Api.Wires.In;
-using FinanceGameinator.Players.Api.Wires.Out;
+﻿using Amazon.Lambda.APIGatewayEvents;
+using FinanceGameinator.Games.Api.Ports;
+using FinanceGameinator.Games.Api.Wires.In;
+using FinanceGameinator.Games.Api.Wires.Out;
 using FinanceGameinator.Shared.Test.AwsFake;
 using FluentAssertions;
 using System.Text.Json;
 
-namespace FinanceGameinator.Players.Integration.Test
+namespace FinanceGameinator.Games.Integration.Test.Crud
 {
-    public class PlayerTest
+    public class GameCrudTest
     {
         private readonly HttpServer _server;
 
-        public PlayerTest()
+        public GameCrudTest()
         {
             _server = new HttpServer();
         }
@@ -24,7 +24,7 @@ namespace FinanceGameinator.Players.Integration.Test
             var playerId = Guid.NewGuid();
             var playerName = "John";
 
-            var wire = new PlayerRegistrationWire
+            var wire = new GameRegistrationWire
             {
                 Id = playerId,
                 Name = playerName
@@ -37,7 +37,7 @@ namespace FinanceGameinator.Players.Integration.Test
             .Result;
 
             response.StatusCode.Should().Be(200);
-            JsonSerializer.Deserialize<PlayerRegistrationWire>(response.Body)
+            JsonSerializer.Deserialize<GameRegistrationWire>(response.Body)
                 .Should().BeEquivalentTo(wire);
 
 
@@ -55,9 +55,9 @@ namespace FinanceGameinator.Players.Integration.Test
 
             getResponse.StatusCode.Should().Be(200);
 
-            JsonSerializer.Deserialize<PlayerWireOut>(getResponse.Body)
+            JsonSerializer.Deserialize<GameWireOut>(getResponse.Body)
                 .Should()
-                .BeEquivalentTo(new PlayerWireOut(playerId, playerName, new List<GameWireOut>()));
+                .BeEquivalentTo(new GameWireOut(playerId, playerName));
         }
 
         [Fact]
@@ -67,7 +67,7 @@ namespace FinanceGameinator.Players.Integration.Test
             var playerId = Guid.NewGuid();
             var playerName = "John";
 
-            var wire = new PlayerRegistrationWire
+            var wire = new GameRegistrationWire
             {
                 Id = playerId,
                 Name = playerName
@@ -80,7 +80,7 @@ namespace FinanceGameinator.Players.Integration.Test
             .Result;
 
             response.StatusCode.Should().Be(200);
-            JsonSerializer.Deserialize<PlayerRegistrationWire>(response.Body)
+            JsonSerializer.Deserialize<GameRegistrationWire>(response.Body)
                 .Should().BeEquivalentTo(wire);
 
             wire.Name = "Banana";
@@ -107,9 +107,9 @@ namespace FinanceGameinator.Players.Integration.Test
 
             getResponse.StatusCode.Should().Be(200);
 
-            JsonSerializer.Deserialize<PlayerWireOut>(getResponse.Body)
+            JsonSerializer.Deserialize<GameWireOut>(getResponse.Body)
                 .Should()
-                .BeEquivalentTo(new PlayerWireOut(playerId, playerName, new List<GameWireOut>()));
+                .BeEquivalentTo(new GameWireOut(playerId, playerName));
         }
     }
 }
