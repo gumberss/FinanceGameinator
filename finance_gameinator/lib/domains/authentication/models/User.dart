@@ -11,6 +11,8 @@ class User {
   bool confirmed = false;
   bool hasAccess = false;
 
+  bool alreadyRegistered = false;
+
   User({this.email, this.name});
 
   User.fromJson(Map<String, dynamic> json)

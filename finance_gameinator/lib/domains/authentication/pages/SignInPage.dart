@@ -177,14 +177,20 @@ class _SignInPageState extends State<SignInPage> {
                                   AppStrings.loggedIn,
                                 );
 
+                                var registeredUser = await UserStorage().getUser();
+
                                 var user = result.value!;
-
-                                await UserStorage().storeUser(user);
                                 await JwtService().storeJwtToken(user.accessToken!);
-                                var registrationResult = await PlayerService().registerPlayer(user.id!, user.name!);
 
-                                if(!registrationResult.success()){
-                                  return;
+                                if(registeredUser == null
+                                    || registeredUser.id != user.id
+                                    || !registeredUser.alreadyRegistered){
+                                  var registrationResult = await PlayerService().registerPlayer(user.id!, user.name!);
+                                  if(!registrationResult.success()){
+                                    return;
+                                  }
+                                  user.alreadyRegistered = true;
+                                  await UserStorage().storeUser(user);
                                 }
 
                                 Navinator.pushNamed(AppRouteNames.playerHome);

@@ -4,7 +4,7 @@
 
 ### Player Details
 
-- [ ] Create the player details screen
+- [x] Create the player details screen
 - [ ] Request player details data
 - [ ] Present the player data to the player
 - [ ] Create the create game button
