@@ -5,7 +5,7 @@ using FinanceGameinator.Shared.Db.Interfaces.Cross;
 using FinanceGameinator.Games.Db.Interfaces.Repositories;
 using FinanceGameinator.Games.Domain.Models;
 
-namespace FinanceGameinator.Players.Db.Repositories
+namespace FinanceGameinator.Games.Db.Repositories
 {
     public class GameRepository : IGameRepository
     {
@@ -16,23 +16,15 @@ namespace FinanceGameinator.Players.Db.Repositories
             _dbConnection = dbConnection;
         }
 
-        public async Task<Result<Game, BusinessException>> FindById(Guid playerId)
-            => await GameAdapter.ToGetByIdRequest(playerId)
+        public async Task<Result<Game, BusinessException>> FindById(String gameCode)
+            => await GameAdapter.ToGetByIdRequest(gameCode)
                 .Then(queryRequest => _dbConnection.QueryAsync(queryRequest))
-                .Then(response => GameAdapter.ToModel(playerId, response.Items));
+                .Then(response => GameAdapter.ToModel(gameCode, response.Items));
 
         public async Task<Result<GameRegistration, BusinessException>> Register(GameRegistration registrationData)
-        {
-            var result = await GameAdapter.ToRegistrationRequest(registrationData)
-                .Then(putRequest => _dbConnection.PutAsync(putRequest));
-
-            if (result.IsFailure && result.Error.InnerException?.GetType() != typeof(ConditionalCheckFailedException))
-            {
-                return result.Error;
-            }
-
-            return registrationData;
-        }
+            =>  await GameAdapter.ToRegistrationRequest(registrationData)
+                .Then(putRequest => _dbConnection.PutAsync(putRequest))
+                .Then(_ => registrationData);
 
     }
 }

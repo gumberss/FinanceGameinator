@@ -1,4 +1,12 @@
-﻿using FinanceGameinator.Shared.Logger;
+﻿using FinanceGameinator.Games.Db.Interfaces.Repositories;
+using FinanceGameinator.Games.Db.Repositories;
+using FinanceGameinator.Games.Domain.Interfaces.Services;
+using FinanceGameinator.Games.Domain.Services;
+using FinanceGameinator.Games.UseCases.Interfaces;
+using FinanceGameinator.Games.UseCases.UseCases;
+using FinanceGameinator.Shared.Db.Cross;
+using FinanceGameinator.Shared.Db.Interfaces.Cross;
+using FinanceGameinator.Shared.Logger;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace FinanceGameinator.Games.IoC.ServiceCollectionProvider
@@ -19,6 +27,12 @@ namespace FinanceGameinator.Games.IoC.ServiceCollectionProvider
 
         private void ConfigureServices()
         {
+            _services.AddTransient<IGameUseCase, GameUseCase>();
+            _services.AddTransient<IGameService, GameService>();
+            _services.AddTransient<IGameRepository, GameRepository>();
+            _services.AddSingleton<IDynamoDbConnection, DynamoDbConnection>();
+            
+
             _services.AddLogging(logging => _logger.SetupLogger(false, logging));
         }
     }

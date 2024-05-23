@@ -12,29 +12,29 @@ namespace FinanceGameinator.Games.Db.Adapters
         private static readonly String PK_COLL = "PK";
         private static readonly String tableName = "FinanceGameinatorTable";
 
-        internal static Result<QueryRequest, BusinessException> ToGetByIdRequest(Guid id)
+        internal static Result<QueryRequest, BusinessException> ToGetByIdRequest(String code)
             => new QueryRequest
             {
                 TableName = tableName,
                 KeyConditionExpression = $"{PK_COLL} = :pk",
                 ExpressionAttributeValues = new Dictionary<String, AttributeValue>
                 {
-                    { ":pk", new AttributeValue { S = $"{PREFIX}{id}" } }
+                    { ":pk", new AttributeValue { S = $"{PREFIX}{code}" } }
                 }
             };
 
-        internal static Result<Game, BusinessException> ToModel(Guid id, List<Dictionary<String, AttributeValue>> rows)
+        internal static Result<Game, BusinessException> ToModel(String code, List<Dictionary<String, AttributeValue>> rows)
         {
-            var pk = $"{PREFIX}{id}";
+            var pk = $"{PREFIX}{code}";
 
             var metadata = rows.Find(row => row[PK_COLL].S == pk && row[SK_COLL].S == pk);
 
             if (metadata is null)
             {
-                return new BusinessException(HttpStatusCode.NotFound, $"Not found a player metadata with the PK {pk}");
+                return new BusinessException(HttpStatusCode.NotFound, $"Not found a game metadata with the PK {pk}");
             }
 
-            return new Game(id, metadata["Name"].S);
+            return new Game(code, metadata["Name"].S);
         }
 
         internal static Result<PutItemRequest, BusinessException> ToRegistrationRequest(GameRegistration registrationData)
@@ -43,8 +43,8 @@ namespace FinanceGameinator.Games.Db.Adapters
                 TableName = tableName,
                 Item = new Dictionary<string, AttributeValue>()
                 {
-                    { PK_COLL, new AttributeValue { S = $"{PREFIX}{registrationData.Id}" }},
-                    { SK_COLL, new AttributeValue { S = $"{PREFIX}{registrationData.Id}" }},
+                    { PK_COLL, new AttributeValue { S = $"{PREFIX}{registrationData.Code}" }},
+                    { SK_COLL, new AttributeValue { S = $"{PREFIX}{registrationData.Code}" }},
                     { "Name", new AttributeValue { S = registrationData.Name }},
                     //https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/LowLevelDotNetItemCRUD.html
                 },

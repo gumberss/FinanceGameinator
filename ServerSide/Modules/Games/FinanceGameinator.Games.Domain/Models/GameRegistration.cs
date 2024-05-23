@@ -2,13 +2,19 @@
 {
     public class GameRegistration
     {
-        public Guid Id { get; set; }
-        public String Name { get; set; }
+        public String Name { get; private set; }
 
-        public GameRegistration(Guid id, string name)
+        public String? Code { get; private set; }
+
+        public GameRegistration(string name)
         {
-            Id = id;
             Name = name;
+        }
+
+        public GameRegistration SetCode(String code)
+        {
+            Code = code;
+            return this;
         }
     }
 }

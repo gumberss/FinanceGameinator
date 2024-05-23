@@ -16,6 +16,8 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\..\Shared\FinanceGameinator.Shared.Logger\FinanceGameinator.Shared.Logger.csproj" />
+    <ProjectReference Include="..\FinanceGameinator.Games.Db\FinanceGameinator.Games.Db.csproj" />
+    <ProjectReference Include="..\FinanceGameinator.Games.UseCases\FinanceGameinator.Games.UseCases.csproj" />
   </ItemGroup>
 
 </Project>

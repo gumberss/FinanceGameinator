@@ -9,8 +9,8 @@ namespace FinanceGameinator.Games.Api.Wires.Out
 {
     public class GameWireOut
     {
-        [JsonPropertyName("id")]
-        public Guid Id { get; set; }
+        [JsonPropertyName("code")]
+        public String Code { get; set; }
 
         [JsonPropertyName("name")]
         public string Name { get; set; }
@@ -20,9 +20,9 @@ namespace FinanceGameinator.Games.Api.Wires.Out
 
         }
 
-        public GameWireOut(Guid id, string name)
+        public GameWireOut(String code, String name)
         {
-            Id = id;
+            Code = code;
             Name = name;
         }
     }
