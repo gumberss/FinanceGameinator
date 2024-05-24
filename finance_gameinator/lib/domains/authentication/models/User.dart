@@ -7,8 +7,11 @@ class User {
   String? name;
   String? password;
   String? id;
+  String? accessToken;
   bool confirmed = false;
   bool hasAccess = false;
+
+  bool alreadyRegistered = false;
 
   User({this.email, this.name});
 

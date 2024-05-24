@@ -44,7 +44,7 @@ A final overview of how the table will work will be described in the image below
 
 <img src="https://github.com/gumberss/PurchaseListinator/assets/38296002/3ef6176b-4154-4c18-bfa2-04719ad140ce"/>
 
-s. The primary advantage lies in the efficient retrieval of games associated with a player. By querying only one partition key (player#id) and utilizing a sort key beginning with games#, the system significantly reduces costs by minimizing the read capacity unit (RCU) expenditure required for data retrieval.
+ The primary advantage lies in the efficient retrieval of games associated with a player. By querying only one partition key (player#id) and utilizing a sort key beginning with games#, the system significantly reduces costs by minimizing the read capacity unit (RCU) expenditure required for data retrieval.
 
 Another notable advantage of this approach is the ability to consolidate all player-related data within the same partition, eliminating the inclusion of extraneous data unrelated to the player's activities, such as data pertaining to the player during gameplay. This consolidation ensures that all player-related information is stored in a cohesive manner, free from out-of-context data.
 

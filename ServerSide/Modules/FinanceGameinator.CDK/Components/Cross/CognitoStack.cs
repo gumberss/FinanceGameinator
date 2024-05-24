@@ -18,16 +18,20 @@ namespace FinanceGameinator.CDK.Components.Cross
             UserPool = RegisterUserPool();
             UserPoolDomain = RegisterDomain(UserPool);
             UserPoolClient = RegisterAppClient(UserPool);
-            CognitoAuthorizer = RegisterCognitoAuthorizer(UserPool);
+           // CognitoAuthorizer = RegisterCognitoAuthorizer(UserPool);
         }
 
         internal MethodOptions MethodAuthorizer()
-          => new MethodOptions
-          {
-              Authorizer = CognitoAuthorizer,
-              AuthorizationType = AuthorizationType.COGNITO
+        {
+            return null;
+            /*
+             return new MethodOptions
+            {
+                Authorizer = CognitoAuthorizer,
+                AuthorizationType = AuthorizationType.COGNITO
 
-          };
+            };*/
+        }
         private CognitoUserPoolsAuthorizer RegisterCognitoAuthorizer(UserPool userPool)
             => new CognitoUserPoolsAuthorizer(Stack, "FinanceGameinatorCognitoAuthorizer", new CognitoUserPoolsAuthorizerProps
             {
@@ -65,7 +69,7 @@ namespace FinanceGameinator.CDK.Components.Cross
                 CustomAttributes = new Dictionary<string, ICustomAttribute> { },
                 PasswordPolicy = new PasswordPolicy
                 {
-                    MinLength = 8,
+                    MinLength = 6,
                     RequireLowercase = false,
                     RequireUppercase = false,
                     RequireDigits = false,
@@ -74,6 +78,7 @@ namespace FinanceGameinator.CDK.Components.Cross
                 Email = UserPoolEmail.WithCognito(),
                 AccountRecovery = AccountRecovery.EMAIL_ONLY,
                 RemovalPolicy = RemovalPolicy.DESTROY,
+                
 
             });
 
@@ -96,7 +101,7 @@ namespace FinanceGameinator.CDK.Components.Cross
             return userPool.AddClient("appClient", new UserPoolClientOptions
             {
                 IdTokenValidity = Duration.Hours(6),
-                AccessTokenValidity = Duration.Hours(6),
+                AccessTokenValidity = Duration.Hours(12),
                 AuthFlows = new AuthFlow
                 {
                     UserPassword = true,

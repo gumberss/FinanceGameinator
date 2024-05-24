@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:finance_gameinator/Secrets.dart';
 import 'package:finance_gameinator/components/navigation/Navinator.dart';
+import 'package:finance_gameinator/domains/authentication/ports/PlayerService.dart';
 import 'package:flutter/material.dart';
 
 import '../../../components/constants/AppRegex.dart';
@@ -232,6 +233,7 @@ class _RegisterPageState extends State<RegisterPage> {
                                 if (!user.confirmed) {
                                   Navinator.pushNamed(AppRouteNames.confirmation, arguments:  user.email!);
                                 }
+
                                 Snackbar.showSnackBar(
                                   AppStrings.userRegistered,
                                 );

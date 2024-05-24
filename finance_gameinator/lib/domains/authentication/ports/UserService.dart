@@ -99,6 +99,7 @@ class UserService {
       final user = User.fromUserAttributes(attributes);
       user.confirmed = true;
       user.hasAccess = true;
+      user.accessToken = _session!.getAccessToken().getJwtToken();
       return Result(user);
     }
 
@@ -156,7 +157,6 @@ class UserService {
       return Result.fromError(BusinessError(
           ErrorIdentifier.serverError, 'Unknown client error occurred'));
     }
-
     final user = User();
     user.email = email;
     user.name = name;

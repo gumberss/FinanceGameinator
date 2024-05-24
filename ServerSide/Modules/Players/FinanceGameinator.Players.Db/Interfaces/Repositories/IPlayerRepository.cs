@@ -6,5 +6,6 @@ namespace FinanceGameinator.Players.Db.Interfaces.Repositories
     public interface IPlayerRepository
     {
         Task<Result<Player, BusinessException>> QueryPlayer(Guid playerId);
+        Task<Result<PlayerRegistration, BusinessException>> Register(PlayerRegistration registrationData);
     }
 }

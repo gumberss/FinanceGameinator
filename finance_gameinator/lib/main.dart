@@ -1,3 +1,4 @@
+import 'package:finance_gameinator/domains/player/pages/PlayerHomePage.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -44,6 +45,7 @@ class MyHomePage extends StatefulWidget {
 class _MyHomePageState extends State<MyHomePage> {
   @override
   Widget build(BuildContext context) {
-    return Scaffold(body: RegisterApp());
+//    return Scaffold(body: RegisterApp());
+    return Scaffold(body: PlayerHomePage());
   }
 }

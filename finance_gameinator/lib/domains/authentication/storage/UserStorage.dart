@@ -3,11 +3,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../models/User.dart';
 
 class UserStorage {
-  get userId async {
-    const storage = FlutterSecureStorage();
-    return await storage.read(key: 'userId');
-  }
-
+  
   Future storeUser(User user) async {
     const storage = FlutterSecureStorage();
     var data = User.serialize(user);

@@ -1,5 +1,7 @@
 import 'package:finance_gameinator/Secrets.dart';
+import 'package:finance_gameinator/components/JwtService.dart';
 import 'package:finance_gameinator/components/constants/AppRegex.dart';
+import 'package:finance_gameinator/domains/authentication/ports/PlayerService.dart';
 import 'package:finance_gameinator/domains/authentication/ports/UserService.dart';
 import 'package:flutter/material.dart';
 
@@ -175,7 +177,21 @@ class _SignInPageState extends State<SignInPage> {
                                   AppStrings.loggedIn,
                                 );
 
-                                await UserStorage().storeUser(result.value!);
+                                var registeredUser = await UserStorage().getUser();
+
+                                var user = result.value!;
+                                await JwtService().storeJwtToken(user.accessToken!);
+
+                                if(registeredUser == null
+                                    || registeredUser.id != user.id
+                                    || !registeredUser.alreadyRegistered){
+                                  var registrationResult = await PlayerService().registerPlayer(user.id!, user.name!);
+                                  if(!registrationResult.success()){
+                                    return;
+                                  }
+                                  user.alreadyRegistered = true;
+                                  await UserStorage().storeUser(user);
+                                }
 
                                 Navinator.pushNamed(AppRouteNames.playerHome);
 

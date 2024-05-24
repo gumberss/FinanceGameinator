@@ -18,6 +18,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\..\Shared\FinanceGameinator.Shared.Db\FinanceGameinator.Shared.Db.csproj" />
     <ProjectReference Include="..\FinanceGameinator.Players.Domain\FinanceGameinator.Players.Domain.csproj" />
   </ItemGroup>
 

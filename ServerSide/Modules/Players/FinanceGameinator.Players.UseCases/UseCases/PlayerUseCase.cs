@@ -14,7 +14,10 @@ namespace FinanceGameinator.Players.UseCases.UseCases
             _playerRepository = playerRepository;
         }
 
-        public Task<Result<Player, BusinessException>> FindPlayer(Guid playerId)
+        public Task<Result<Player, BusinessException>> Find(Guid playerId)
             => _playerRepository.QueryPlayer(playerId);
+
+        public Task<Result<PlayerRegistration, BusinessException>> Register(PlayerRegistration registrationData)
+            => _playerRepository.Register(registrationData);
     }
 }

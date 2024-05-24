@@ -1,5 +1,5 @@
-﻿using FinanceGameinator.Players.Db.Cross;
-using FinanceGameinator.Players.Db.Interfaces.Cross;
+﻿using FinanceGameinator.Shared.Db.Cross;
+using FinanceGameinator.Shared.Db.Interfaces.Cross;
 using FinanceGameinator.Players.Db.Interfaces.Repositories;
 using FinanceGameinator.Players.Db.Repositories;
 using FinanceGameinator.Players.UseCases.Interfaces.UseCases;

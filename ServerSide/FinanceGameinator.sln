@@ -3,8 +3,6 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.8.34330.188
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FinanceGameinator.CDK", "FinanceGameinator.CDK\FinanceGameinator.CDK.csproj", "{71E350E3-8D78-483A-A526-96DCE529F4BD}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FinanceGameinator.Players.Api", "Modules\Players\FinanceGameinator.Players.Api\FinanceGameinator.Players.Api.csproj", "{02CD9E62-B011-4FEC-BD0E-CE54A23BC75E}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{AA12382F-AE7D-49D4-A4AA-7DDB7179EEC2}"
@@ -20,8 +18,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Players", "Players", "{C555
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FinanceGameinator.Games.Api", "Modules\Games\FinanceGameinator.Games.Api\FinanceGameinator.Games.Api.csproj", "{7CEDA926-EB5D-4D42-8331-AC2DDB6EB4E0}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FinanceGameinator.Games.Api.Tests", "Modules\Games\FinanceGameinator.Games.Api.Tests\FinanceGameinator.Games.Api.Tests.csproj", "{7F514465-FF23-4375-B113-F2A64AD17230}"
-EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Cross", "Cross", "{4399C50D-2336-41C3-BECA-69A81179E840}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FinanceGameinator.Cross.Api", "Modules\Cross\FinanceGameinator.Cross.Api\FinanceGameinator.Cross.Api.csproj", "{D3CE4A13-3A27-458A-8C17-526CD122DE57}"
@@ -36,17 +32,27 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FinanceGameinator.Players.U
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FinanceGameinator.Players.IoC", "Modules\Players\FinanceGameinator.Players.IoC\FinanceGameinator.Players.IoC.csproj", "{DF425EDA-3C53-427D-8A56-50BF21FFC3B2}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FinanceGameinator.Games.UseCases", "Modules\Games\FinanceGameinator.Games.UseCases\FinanceGameinator.Games.UseCases.csproj", "{83486439-992E-4DB7-889F-F9791EA7DA33}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FinanceGameinator.Games.UseCases", "Modules\Games\FinanceGameinator.Games.UseCases\FinanceGameinator.Games.UseCases.csproj", "{83486439-992E-4DB7-889F-F9791EA7DA33}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FinanceGameinator.Games.IoC", "Modules\Games\FinanceGameinator.Games.IoC\FinanceGameinator.Games.IoC.csproj", "{6022B0D0-0A39-49F6-805B-30AFE686010F}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FinanceGameinator.Games.IoC", "Modules\Games\FinanceGameinator.Games.IoC\FinanceGameinator.Games.IoC.csproj", "{6022B0D0-0A39-49F6-805B-30AFE686010F}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FinanceGameinator.Games.Domain", "Modules\Games\FinanceGameinator.Games.Domain\FinanceGameinator.Games.Domain.csproj", "{FD8EDF96-0BAF-4010-A63C-7948E7981572}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FinanceGameinator.Games.Domain", "Modules\Games\FinanceGameinator.Games.Domain\FinanceGameinator.Games.Domain.csproj", "{FD8EDF96-0BAF-4010-A63C-7948E7981572}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FinanceGameinator.Games.Db", "Modules\Games\FinanceGameinator.Games.Db\FinanceGameinator.Games.Db.csproj", "{8522CF25-F25E-402A-8483-69F94E892485}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FinanceGameinator.Games.Db", "Modules\Games\FinanceGameinator.Games.Db\FinanceGameinator.Games.Db.csproj", "{8522CF25-F25E-402A-8483-69F94E892485}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Shared", "Shared", "{3F805AF5-74EC-4C9E-8F8F-9DB5A65E4B1E}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FinanceGameinator.Shared.Logger", "Shared\FinanceGameinator.Shared.Logger\FinanceGameinator.Shared.Logger.csproj", "{C486FC80-902D-4A86-99C5-F345F34A9A2D}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FinanceGameinator.Shared.Logger", "Shared\FinanceGameinator.Shared.Logger\FinanceGameinator.Shared.Logger.csproj", "{C486FC80-902D-4A86-99C5-F345F34A9A2D}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FinanceGameinator.CDK", "Modules\FinanceGameinator.CDK\FinanceGameinator.CDK.csproj", "{EC12D086-3507-47B2-82C9-78C052719785}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FinanceGameinator.Players.Integration.Test", "Modules\Players\FinanceGameinator.Players.Integration.Test\FinanceGameinator.Players.Integration.Test.csproj", "{91C97FE1-A9F1-4F25-9974-D2F4C43EAD71}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FinanceGameinator.Shared.Db", "Shared\FinanceGameinator.Shared.Db\FinanceGameinator.Shared.Db.csproj", "{6F9903D0-FA97-4FEC-BF98-548782246226}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FinanceGameinator.Games.Integration.Test", "Modules\Games\FinanceGameinator.Games.Integration.Test\FinanceGameinator.Games.Integration.Test.csproj", "{CF2887C2-41A6-43E0-8921-2263557097CB}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FinanceGameinator.Shared.Test", "Shared\FinanceGameinator.Shared.Test\FinanceGameinator.Shared.Test.csproj", "{F22FE702-DDBA-4587-8D8D-9226A555C28C}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -54,10 +60,6 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{71E350E3-8D78-483A-A526-96DCE529F4BD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{71E350E3-8D78-483A-A526-96DCE529F4BD}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{71E350E3-8D78-483A-A526-96DCE529F4BD}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{71E350E3-8D78-483A-A526-96DCE529F4BD}.Release|Any CPU.Build.0 = Release|Any CPU
 		{02CD9E62-B011-4FEC-BD0E-CE54A23BC75E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{02CD9E62-B011-4FEC-BD0E-CE54A23BC75E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{02CD9E62-B011-4FEC-BD0E-CE54A23BC75E}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -66,10 +68,6 @@ Global
 		{7CEDA926-EB5D-4D42-8331-AC2DDB6EB4E0}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{7CEDA926-EB5D-4D42-8331-AC2DDB6EB4E0}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{7CEDA926-EB5D-4D42-8331-AC2DDB6EB4E0}.Release|Any CPU.Build.0 = Release|Any CPU
-		{7F514465-FF23-4375-B113-F2A64AD17230}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{7F514465-FF23-4375-B113-F2A64AD17230}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{7F514465-FF23-4375-B113-F2A64AD17230}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{7F514465-FF23-4375-B113-F2A64AD17230}.Release|Any CPU.Build.0 = Release|Any CPU
 		{D3CE4A13-3A27-458A-8C17-526CD122DE57}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{D3CE4A13-3A27-458A-8C17-526CD122DE57}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D3CE4A13-3A27-458A-8C17-526CD122DE57}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -114,6 +112,26 @@ Global
 		{C486FC80-902D-4A86-99C5-F345F34A9A2D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C486FC80-902D-4A86-99C5-F345F34A9A2D}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{C486FC80-902D-4A86-99C5-F345F34A9A2D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{EC12D086-3507-47B2-82C9-78C052719785}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EC12D086-3507-47B2-82C9-78C052719785}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EC12D086-3507-47B2-82C9-78C052719785}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EC12D086-3507-47B2-82C9-78C052719785}.Release|Any CPU.Build.0 = Release|Any CPU
+		{91C97FE1-A9F1-4F25-9974-D2F4C43EAD71}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{91C97FE1-A9F1-4F25-9974-D2F4C43EAD71}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{91C97FE1-A9F1-4F25-9974-D2F4C43EAD71}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{91C97FE1-A9F1-4F25-9974-D2F4C43EAD71}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6F9903D0-FA97-4FEC-BF98-548782246226}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6F9903D0-FA97-4FEC-BF98-548782246226}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6F9903D0-FA97-4FEC-BF98-548782246226}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6F9903D0-FA97-4FEC-BF98-548782246226}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CF2887C2-41A6-43E0-8921-2263557097CB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CF2887C2-41A6-43E0-8921-2263557097CB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CF2887C2-41A6-43E0-8921-2263557097CB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CF2887C2-41A6-43E0-8921-2263557097CB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F22FE702-DDBA-4587-8D8D-9226A555C28C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F22FE702-DDBA-4587-8D8D-9226A555C28C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F22FE702-DDBA-4587-8D8D-9226A555C28C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F22FE702-DDBA-4587-8D8D-9226A555C28C}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -123,7 +141,6 @@ Global
 		{18858147-8248-4988-B502-12B43CA1F122} = {C4601FC5-60D7-479F-A398-D90ED127CF68}
 		{C5554483-490D-4956-AA7A-6AA0D8CA13CA} = {C4601FC5-60D7-479F-A398-D90ED127CF68}
 		{7CEDA926-EB5D-4D42-8331-AC2DDB6EB4E0} = {18858147-8248-4988-B502-12B43CA1F122}
-		{7F514465-FF23-4375-B113-F2A64AD17230} = {18858147-8248-4988-B502-12B43CA1F122}
 		{4399C50D-2336-41C3-BECA-69A81179E840} = {C4601FC5-60D7-479F-A398-D90ED127CF68}
 		{D3CE4A13-3A27-458A-8C17-526CD122DE57} = {4399C50D-2336-41C3-BECA-69A81179E840}
 		{980CA4A3-0053-4504-934D-4B46578BB2B2} = {4399C50D-2336-41C3-BECA-69A81179E840}
@@ -136,6 +153,10 @@ Global
 		{FD8EDF96-0BAF-4010-A63C-7948E7981572} = {18858147-8248-4988-B502-12B43CA1F122}
 		{8522CF25-F25E-402A-8483-69F94E892485} = {18858147-8248-4988-B502-12B43CA1F122}
 		{C486FC80-902D-4A86-99C5-F345F34A9A2D} = {3F805AF5-74EC-4C9E-8F8F-9DB5A65E4B1E}
+		{91C97FE1-A9F1-4F25-9974-D2F4C43EAD71} = {C5554483-490D-4956-AA7A-6AA0D8CA13CA}
+		{6F9903D0-FA97-4FEC-BF98-548782246226} = {3F805AF5-74EC-4C9E-8F8F-9DB5A65E4B1E}
+		{CF2887C2-41A6-43E0-8921-2263557097CB} = {18858147-8248-4988-B502-12B43CA1F122}
+		{F22FE702-DDBA-4587-8D8D-9226A555C28C} = {3F805AF5-74EC-4C9E-8F8F-9DB5A65E4B1E}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {C1009707-9210-4229-8963-1473BE1FE1F9}
