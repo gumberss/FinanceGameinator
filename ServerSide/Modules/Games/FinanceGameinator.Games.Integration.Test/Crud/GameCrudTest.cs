@@ -11,35 +11,12 @@ using FinanceGameinator.Shared.Db.Cross;
 using FinanceGameinator.Shared.Test.AwsFake;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
+using Moq;
 using System.Text.Json;
 using Logger = FinanceGameinator.Shared.Logger;
 
 namespace FinanceGameinator.Games.Integration.Test.Crud
 {
-    public class FakeGameService : IGameService
-    {
-        private readonly string firstCode;
-        private readonly string secondCode;
-        bool firstTime = true;
-
-        public FakeGameService(String firstCode, String secondCode)
-        {
-            this.firstCode = firstCode;
-            this.secondCode = secondCode;
-        }
-
-        public string GenerateCode(Random random)
-        {
-            if (firstTime)
-            {
-                firstTime = false;
-                return firstCode;
-            }
-
-            return secondCode;
-        }
-    }
-
     public class GameCrudTest
     {
         private readonly HttpServer _server;
@@ -108,9 +85,21 @@ namespace FinanceGameinator.Games.Integration.Test.Crud
 
             result.IsSuccess.Should().BeTrue();
             result.Value.Code.Should().Be(code);
+            
+            var firstTime = true;
+
+            var gameServiceMoq = new Mock<IGameService>();
+            gameServiceMoq.Setup(x => x.GenerateCode(It.IsAny<Random>()))
+                .Returns(() =>
+                {
+                    if (!firstTime) return secondCode;
+
+                    firstTime = false;
+                    return code;
+                });
 
             var provider = new ServiceCollectionProvider(new Logger.LambdaLogger());
-            provider.ServiceCollection.AddTransient<IGameService, FakeGameService>((a) => new FakeGameService(code, secondCode));
+            provider.ServiceCollection.AddTransient((a) => gameServiceMoq.Object);
 
             var server = new HttpServer(provider);
 

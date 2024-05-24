@@ -6,7 +6,7 @@ namespace FinanceGameinator.Games.Domain.Services
     {
         String codePossibleChars = "abcdefghijklmnopqrstuvwxyz1234567890";
 
-        int CODE_LENGHT = 8;
+        int CODE_LENGHT = 6;
 
         public String GenerateCode(Random random)
             => new string(Enumerable.Range(0, CODE_LENGHT)
