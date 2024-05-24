@@ -13,10 +13,10 @@ namespace FinanceGameinator.Games.IoC.ServiceCollectionProvider
 {
     public class ServiceCollectionProvider
     {
-        private ServiceCollection _services;
+        private IServiceCollection _services;
         private ILogger _logger;
 
-        public ServiceCollection ServiceCollection => _services;
+        public IServiceCollection ServiceCollection => _services;
 
         public ServiceCollectionProvider(ILogger logger)
         {
@@ -31,7 +31,7 @@ namespace FinanceGameinator.Games.IoC.ServiceCollectionProvider
             _services.AddTransient<IGameService, GameService>();
             _services.AddTransient<IGameRepository, GameRepository>();
             _services.AddSingleton<IDynamoDbConnection, DynamoDbConnection>();
-            
+
 
             _services.AddLogging(logging => _logger.SetupLogger(false, logging));
         }

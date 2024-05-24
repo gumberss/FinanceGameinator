@@ -2,12 +2,44 @@
 using FinanceGameinator.Games.Api.Ports;
 using FinanceGameinator.Games.Api.Wires.In;
 using FinanceGameinator.Games.Api.Wires.Out;
+using FinanceGameinator.Games.Db.Repositories;
+using FinanceGameinator.Games.Domain.Interfaces.Services;
+using FinanceGameinator.Games.Domain.Models;
+using FinanceGameinator.Games.Domain.Services;
+using FinanceGameinator.Games.IoC.ServiceCollectionProvider;
+using FinanceGameinator.Shared.Db.Cross;
 using FinanceGameinator.Shared.Test.AwsFake;
 using FluentAssertions;
+using Microsoft.Extensions.DependencyInjection;
 using System.Text.Json;
+using Logger = FinanceGameinator.Shared.Logger;
 
 namespace FinanceGameinator.Games.Integration.Test.Crud
 {
+    public class FakeGameService : IGameService
+    {
+        private readonly string firstCode;
+        private readonly string secondCode;
+        bool firstTime = true;
+
+        public FakeGameService(String firstCode, String secondCode)
+        {
+            this.firstCode = firstCode;
+            this.secondCode = secondCode;
+        }
+
+        public string GenerateCode(Random random)
+        {
+            if (firstTime)
+            {
+                firstTime = false;
+                return firstCode;
+            }
+
+            return secondCode;
+        }
+    }
+
     public class GameCrudTest
     {
         private readonly HttpServer _server;
@@ -18,7 +50,7 @@ namespace FinanceGameinator.Games.Integration.Test.Crud
         }
 
         [Fact]
-        [Trait("Game Registration", "New insertion")]
+        [Trait("Game", "Registration")]
         public void Should_insert_a_new_game()
         {
             var gameName = "Game 1";
@@ -59,55 +91,40 @@ namespace FinanceGameinator.Games.Integration.Test.Crud
         }
 
         [Fact]
-        [Trait("Player Registration", "Insert Code Already Existent")]
+        [Trait("Game", "Registration")]
         public void Should_handle_code_Exceptions()
         {
-            /*  var playerId = Guid.NewGuid();
-              var playerName = "John";
+            var gameName = "Game 1";
 
-              var wire = new GameRegistrationWire
-              {
-                  Id = playerId,
-                  Name = playerName
-              };
+            var wire = new GameRegistrationWire(gameName);
 
-              var response = _server.Register(new APIGatewayProxyRequest()
-              {
-                  Body = JsonSerializer.Serialize(wire),
-              }, new LambdaContext())
-              .Result;
+            var code = new GameService().GenerateCode(new Random());
+            var secondCode = new GameService().GenerateCode(new Random());
 
-              response.StatusCode.Should().Be(200);
-              JsonSerializer.Deserialize<GameRegistrationWire>(response.Body)
-                  .Should().BeEquivalentTo(wire);
+            var result = new GameRepository(new DynamoDbConnection())
+                .Register(new GameRegistration(gameName)
+                .SetCode(code))
+                .Result;
 
-              wire.Name = "Banana";
+            result.IsSuccess.Should().BeTrue();
+            result.Value.Code.Should().Be(code);
 
-              var secondResponse = _server.Register(new APIGatewayProxyRequest()
-              {
-                  Body = JsonSerializer.Serialize(wire),
-              }, new LambdaContext())
-              .Result;
+            var provider = new ServiceCollectionProvider(new Logger.LambdaLogger());
+            provider.ServiceCollection.AddTransient<IGameService, FakeGameService>((a) => new FakeGameService(code, secondCode));
 
-              secondResponse.StatusCode.Should().Be(200);
+            var server = new HttpServer(provider);
 
-              var pathParams = new Dictionary<String, String>
-              {
-                  { "id", playerId.ToString() }
-              };
+            var response = server.Register(new APIGatewayProxyRequest()
+            {
+                Body = JsonSerializer.Serialize(wire),
+            }, new LambdaContext())
+            .Result;
 
-              var getResponse = _server
-              .Get(new APIGatewayProxyRequest()
-              {
-                  PathParameters = pathParams
-              }, new LambdaContext())
-              .Result;
+            response.StatusCode.Should().Be(200);
+            var game = JsonSerializer.Deserialize<GameWireOut>(response.Body);
 
-              getResponse.StatusCode.Should().Be(200);
-
-              JsonSerializer.Deserialize<GameWireOut>(getResponse.Body)
-                  .Should()
-                  .BeEquivalentTo(new GameWireOut(playerId, playerName));*/
+            game.Should().NotBeNull();
+            game.Code.Should().Be(secondCode);
         }
     }
 }

@@ -15,11 +15,12 @@ namespace FinanceGameinator.Games.Api.Ports
 {
     public class HttpServer
     {
-        ServiceCollection _serviceCollection;
+        IServiceCollection _serviceCollection;
 
-        public HttpServer()
+        public HttpServer(ServiceCollectionProvider? serviceCollection = null)
         {
-            _serviceCollection = new ServiceCollectionProvider(new Logger.LambdaLogger()).ServiceCollection;
+            _serviceCollection = serviceCollection?.ServiceCollection
+                ?? new ServiceCollectionProvider(new Logger.LambdaLogger()).ServiceCollection;
         }
 
         public async Task<APIGatewayProxyResponse> Get(APIGatewayProxyRequest request, ILambdaContext context)
@@ -80,7 +81,7 @@ namespace FinanceGameinator.Games.Api.Ports
         public async Task<APIGatewayProxyResponse> Register(APIGatewayProxyRequest request, ILambdaContext context)
         {
             context.Logger.Log(request.Body);
-            
+
             var gameResult =
                 await Result.Try(() => JsonSerializer.Deserialize<GameRegistrationWire>(request.Body))
                 .When(gameData => gameData != null

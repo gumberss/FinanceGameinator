@@ -1,4 +1,5 @@
-﻿using CleanHandling;
+﻿using Amazon.DynamoDBv2.Model;
+using CleanHandling;
 using FinanceGameinator.Games.Db.Interfaces.Repositories;
 using FinanceGameinator.Games.Domain.Interfaces.Services;
 using FinanceGameinator.Games.Domain.Models;
@@ -23,8 +24,23 @@ namespace FinanceGameinator.Games.UseCases.UseCases
             => _gameRepository.FindById(code);
 
         public async Task<Result<GameRegistration, BusinessException>> Create(GameRegistration registrationData)
-            => await Result.From(_gameService.GenerateCode(new Random()))
-                .Then(code => Result.From(registrationData.SetCode(code)))
-                .Then(data => _gameRepository.Register(data));
+            => await CreateRetryable(registrationData, new Random());
+
+        private async Task<Result<GameRegistration, BusinessException>> CreateRetryable(GameRegistration registrationData, Random random, int retryTimes = 3)
+            => await Result.From(_gameService.GenerateCode(random))
+            .Then(code => Result.From(registrationData.SetCode(code)))
+            .Then(async data =>
+            {
+                var result = await _gameRepository.Register(data);
+
+                if (result.IsFailure 
+                && result.Error.InnerException?.GetType() == typeof(ConditionalCheckFailedException)
+                && retryTimes > 0)
+                {
+                    return await CreateRetryable(registrationData, random, --retryTimes);
+                }
+
+                return result;
+            });
     }
 }
