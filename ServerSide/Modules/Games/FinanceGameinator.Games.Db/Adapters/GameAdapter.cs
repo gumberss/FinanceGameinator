@@ -8,6 +8,7 @@ namespace FinanceGameinator.Games.Db.Adapters
     internal class GameAdapter
     {
         private static readonly String PREFIX = "Game#";
+        private static readonly String PLAYER_PREFIX = "Player#";
         private static readonly String SK_COLL = "SK";
         private static readonly String PK_COLL = "PK";
         private static readonly String tableName = "FinanceGameinatorTable";
@@ -34,7 +35,12 @@ namespace FinanceGameinator.Games.Db.Adapters
                 return new BusinessException(HttpStatusCode.NotFound, $"Not found a game metadata with the PK {pk}");
             }
 
-            return new Game(code, metadata["Name"].S);
+            var players = rows
+                .Where(row => row[PK_COLL].S == pk && row[SK_COLL].S.StartsWith(PLAYER_PREFIX))
+                .Select(ToGamePlayerModel)
+                .ToList();
+
+            return new Game(code, metadata["Name"].S, players);
         }
 
         internal static Result<PutItemRequest, BusinessException> ToRegistrationRequest(GameRegistration registrationData)
@@ -43,9 +49,9 @@ namespace FinanceGameinator.Games.Db.Adapters
                 TableName = tableName,
                 Item = new Dictionary<string, AttributeValue>()
                 {
-                    { PK_COLL, new AttributeValue { S = $"{PREFIX}{registrationData.Code}" }},
-                    { SK_COLL, new AttributeValue { S = $"{PREFIX}{registrationData.Code}" }},
-                    { "Name", new AttributeValue { S = registrationData.Name }},
+                    { PK_COLL, new AttributeValue { S = $"{PREFIX}{registrationData.GameCode}" }},
+                    { SK_COLL, new AttributeValue { S = $"{PREFIX}{registrationData.GameCode}" }},
+                    { "Name", new AttributeValue { S = registrationData.GameName }},
                     //https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/LowLevelDotNetItemCRUD.html
                 },
                 ConditionExpression = "attribute_not_exists(#pk) AND attribute_not_exists(#sk)",
@@ -56,6 +62,26 @@ namespace FinanceGameinator.Games.Db.Adapters
                 }
             };
 
+        internal static Result<PutItemRequest, BusinessException> ToPlayerInclusionRequest(GameRegistration registrationData)
+           => new PutItemRequest
+           {
+               TableName = tableName,
+               Item = new Dictionary<string, AttributeValue>()
+               {
+                    { PK_COLL, new AttributeValue { S = $"{PREFIX}{registrationData.GameCode}" }},
+                    { SK_COLL, new AttributeValue { S = $"{PLAYER_PREFIX}{registrationData.PlayerId}" }},
+                    { "Name", new AttributeValue { S = registrationData.PlayerName }},
+               },
+               ConditionExpression = "attribute_not_exists(#pk) AND attribute_not_exists(#sk)",
+               ExpressionAttributeNames = new Dictionary<string, string>
+               {
+                    { "#pk", PK_COLL },
+                    { "#sk", SK_COLL }
+               }
+           };
+
+        internal static Player ToGamePlayerModel(Dictionary<String, AttributeValue> row)
+          => new Player(Guid.Parse(row[SK_COLL].S.Replace(PLAYER_PREFIX, String.Empty)), row["Name"].S);
 
     }
 }

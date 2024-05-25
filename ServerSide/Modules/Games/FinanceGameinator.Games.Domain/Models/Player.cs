@@ -1,12 +1,14 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace FinanceGameinator.Games.Domain.Models
+﻿namespace FinanceGameinator.Games.Domain.Models
 {
-    internal class Player
+    public class Player
     {
+        public Guid Id { get; private set; }
+        public String Name { get; private set; }
+
+        public Player(Guid id, string name)
+        {
+            Id = id;
+            Name = name;
+        }
     }
 }

@@ -2,6 +2,7 @@
 using FinanceGameinator.Games.Api.Ports;
 using FinanceGameinator.Games.Api.Wires.In;
 using FinanceGameinator.Games.Api.Wires.Out;
+using FinanceGameinator.Games.Db.Interfaces.Repositories;
 using FinanceGameinator.Games.Db.Repositories;
 using FinanceGameinator.Games.Domain.Interfaces.Services;
 using FinanceGameinator.Games.Domain.Models;
@@ -31,10 +32,14 @@ namespace FinanceGameinator.Games.Integration.Test.Crud
         public void Should_insert_a_new_game()
         {
             var gameName = "Game 1";
+            var playerName = "Player 1";
+            var playerId = Guid.NewGuid();
 
             var wire = new GameRegistrationWire
             {
-                Name = gameName
+                GameName = gameName,
+                PlayerName = playerName,
+                PlayerId = playerId,
             };
 
             var response = _server.Register(new APIGatewayProxyRequest()
@@ -46,7 +51,11 @@ namespace FinanceGameinator.Games.Integration.Test.Crud
             response.StatusCode.Should().Be(200);
             var game = JsonSerializer.Deserialize<GameWireOut>(response.Body);
 
-            game.Should().NotBeNull().And.BeEquivalentTo(wire);
+            game.Should().NotBeNull().And.BeEquivalentTo(new GameWireOut
+            {
+                Name = gameName,
+                Players = new List<PlayerWireOut> { new(playerId, playerName) }
+            }, (x) => x.Excluding(k => k.Code));
 
             var pathParams = new Dictionary<String, String>
             {
@@ -72,20 +81,21 @@ namespace FinanceGameinator.Games.Integration.Test.Crud
         public void Should_handle_code_Exceptions()
         {
             var gameName = "Game 1";
-
-            var wire = new GameRegistrationWire(gameName);
+            var playerId = Guid.NewGuid();
+            var playerName = "Player 1";
+            var wire = new GameRegistrationWire(playerId, playerName, gameName);
 
             var code = new GameService().GenerateCode(new Random());
             var secondCode = new GameService().GenerateCode(new Random());
 
             var result = new GameRepository(new DynamoDbConnection())
-                .Register(new GameRegistration(gameName)
+                .Register(new GameRegistration(playerId, playerName, gameName)
                 .SetCode(code))
                 .Result;
 
             result.IsSuccess.Should().BeTrue();
             result.Value.Code.Should().Be(code);
-            
+
             var firstTime = true;
 
             var gameServiceMoq = new Mock<IGameService>();

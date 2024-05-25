@@ -7,6 +7,6 @@ namespace FinanceGameinator.Games.UseCases.Interfaces
     {
         public Task<Result<Game, BusinessException>> Find(String code);
 
-        public Task<Result<GameRegistration, BusinessException>> Create(GameRegistration registrationData);
+        public Task<Result<Game, BusinessException>> Create(GameRegistration registrationData);
     }
 }

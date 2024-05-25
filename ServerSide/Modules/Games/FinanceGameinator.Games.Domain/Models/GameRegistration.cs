@@ -2,18 +2,23 @@
 {
     public class GameRegistration
     {
-        public String Name { get; private set; }
+        public Guid PlayerId { get; private set; }
+        public string PlayerName { get; private set; }
 
-        public String? Code { get; private set; }
+        public String GameName { get; private set; }
 
-        public GameRegistration(string name)
+        public String? GameCode { get; private set; }
+
+        public GameRegistration(Guid playerId,String playerName, string gameName)
         {
-            Name = name;
+            PlayerName = playerName;
+            PlayerId = playerId;
+            GameName = gameName;
         }
 
         public GameRegistration SetCode(String code)
         {
-            Code = code;
+            GameCode = code;
             return this;
         }
     }

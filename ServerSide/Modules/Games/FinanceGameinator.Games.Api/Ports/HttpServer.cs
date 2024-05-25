@@ -56,7 +56,7 @@ namespace FinanceGameinator.Games.Api.Ports
                     };
                 }
 
-                var wireOut = new GameWireOut(result.Value.Code!, result.Value.Name);
+                var wireOut = GameAdapterOut(result.Value!);
 
                 return new APIGatewayProxyResponse
                 {
@@ -85,7 +85,7 @@ namespace FinanceGameinator.Games.Api.Ports
             var gameResult =
                 await Result.Try(() => JsonSerializer.Deserialize<GameRegistrationWire>(request.Body))
                 .When(gameData => gameData != null
-                    , gameData => new GameRegistration(gameData.Name)
+                    , gameData => new GameRegistration(gameData.PlayerId, gameData.PlayerName, gameData.GameName)
                     , _ => Result.FromError<GameRegistration>(new BusinessException(HttpStatusCode.BadRequest, "The body don't seems correct")));
 
             if (gameResult.IsFailure)
@@ -104,7 +104,7 @@ namespace FinanceGameinator.Games.Api.Ports
             {
                 var service = serviceProvider.GetService<IGameUseCase>();
 
-                context.Logger.Log(gameResult.Value.Name.ToString());
+                context.Logger.Log(gameResult.Value.GameName.ToString());
 
                 var result = await service!.Create(gameResult.Value);
 
@@ -119,7 +119,7 @@ namespace FinanceGameinator.Games.Api.Ports
                     };
                 }
 
-                var wireOut = new GameWireOut(result.Value.Code!, result.Value.Name);
+                GameWireOut wireOut = GameAdapterOut(result);
 
                 return new APIGatewayProxyResponse
                 {
@@ -138,6 +138,14 @@ namespace FinanceGameinator.Games.Api.Ports
                     Headers = new Dictionary<string, string> { { "Content-Type", "text/plain" } }
                 };
             }
+        }
+
+        private static GameWireOut GameAdapterOut(Result<Game, BusinessException> result)
+        {
+            var playersWireOut = result.Value.Players.Select(player => new PlayerWireOut(player.Id, player.Name))
+                .ToList();
+            var wireOut = new GameWireOut(result.Value.Code!, result.Value.Name, playersWireOut);
+            return wireOut;
         }
     }
 }

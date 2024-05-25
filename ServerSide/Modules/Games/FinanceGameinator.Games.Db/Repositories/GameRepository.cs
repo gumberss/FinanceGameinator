@@ -21,10 +21,14 @@ namespace FinanceGameinator.Games.Db.Repositories
                 .Then(queryRequest => _dbConnection.QueryAsync(queryRequest))
                 .Then(response => GameAdapter.ToModel(gameCode, response.Items));
 
-        public async Task<Result<GameRegistration, BusinessException>> Register(GameRegistration registrationData)
-            =>  await GameAdapter.ToRegistrationRequest(registrationData)
+        public async Task<Result<Game, BusinessException>> Register(GameRegistration registrationData)
+            => await GameAdapter.ToRegistrationRequest(registrationData)
                 .Then(putRequest => _dbConnection.PutAsync(putRequest))
-                .Then(_ => registrationData);
+                .Then(_ => new Game(registrationData.GameCode!, registrationData.GameName, new List<Player>()));
 
+        public async Task<Result<Player, BusinessException>> IncludePlayer(GameRegistration registrationData)
+          => await GameAdapter.ToPlayerInclusionRequest(registrationData)
+              .Then(putRequest => _dbConnection.PutAsync(putRequest))
+              .Then(_ => new Player(registrationData.PlayerId, registrationData.PlayerName));
     }
 }

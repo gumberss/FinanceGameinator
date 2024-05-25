@@ -15,15 +15,19 @@ namespace FinanceGameinator.Games.Api.Wires.Out
         [JsonPropertyName("name")]
         public string Name { get; set; }
 
+        [JsonPropertyName("players")]
+        public List<PlayerWireOut> Players { get; set; }
+
         public GameWireOut()
         {
 
         }
 
-        public GameWireOut(String code, String name)
+        public GameWireOut(String code, String name, List<PlayerWireOut> players)
         {
             Code = code;
             Name = name;
+            Players = players;
         }
     }
 }

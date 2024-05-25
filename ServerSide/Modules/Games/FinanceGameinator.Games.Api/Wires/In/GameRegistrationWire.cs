@@ -4,17 +4,25 @@ namespace FinanceGameinator.Games.Api.Wires.In
 {
     public class GameRegistrationWire
     {
-        [JsonPropertyName("name")]
-        public string Name { get; set; }
+        [JsonPropertyName("gameName")]
+        public string GameName { get; set; }
+
+        [JsonPropertyName("playerId")]
+        public Guid PlayerId { get; set; }
+
+        [JsonPropertyName("playerName")]
+        public String PlayerName { get; set; }
 
         public GameRegistrationWire()
         {
                 
         }
 
-        public GameRegistrationWire(string name)
+        public GameRegistrationWire(Guid playerId, String playerName, string name)
         {
-            Name = name;
+            PlayerName = playerName;
+            PlayerId = playerId;
+            GameName = name;
         }
     }
 }

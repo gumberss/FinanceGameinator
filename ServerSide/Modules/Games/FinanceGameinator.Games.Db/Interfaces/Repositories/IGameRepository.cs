@@ -6,6 +6,7 @@ namespace FinanceGameinator.Games.Db.Interfaces.Repositories
     public interface IGameRepository
     {
         Task<Result<Game, BusinessException>> FindById(String code);
-        Task<Result<GameRegistration, BusinessException>> Register(GameRegistration registrationData);
+        Task<Result<Player, BusinessException>> IncludePlayer(GameRegistration registrationData);
+        Task<Result<Game, BusinessException>> Register(GameRegistration registrationData);
     }
 }
