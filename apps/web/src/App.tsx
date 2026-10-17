@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
-import { ArrowDownToLine, ArrowLeft, ArrowRight, Banknote, Check, Copy, Crown, Dice5, DoorOpen, Eye, EyeOff, HandCoins, HeartHandshake, House, Landmark, LoaderCircle, LockKeyhole, LogOut, Map, Play, Plus, Users, Wallet, Wifi, WifiOff, X } from 'lucide-react';
+import { ArrowDownToLine, ArrowLeft, ArrowRight, Banknote, Check, ChevronDown, Copy, Crown, Dice1, Dice2, Dice3, Dice4, Dice5, Dice6, DoorOpen, Eye, EyeOff, HandCoins, HeartHandshake, House, Landmark, Languages, LoaderCircle, LockKeyhole, LogOut, Map, Play, Plus, Users, Wallet, Wifi, WifiOff, X } from 'lucide-react';
 import { io, type Socket } from 'socket.io-client';
 import { BoardScene } from './BoardScene';
 import { AccountTab } from './AccountTab';
@@ -26,6 +26,7 @@ type Screen = 'home' | 'create' | 'join' | 'room';
 const storageKey = 'finance-gameinator.session';
 const languageStorageKey = 'finance-gameinator.language';
 const tokenColors = ['#e98570', '#547c9b', '#76955f', '#bb925b', '#9275a3', '#4caaa1', '#d16c94', '#5b6676'];
+const dieFaceIcons = [Dice1, Dice2, Dice3, Dice4, Dice5, Dice6];
 
 function localizedName(value: { name: string; nameTranslations?: Partial<Record<Locale, string>> }, locale: Locale) {
     return value.nameTranslations?.[locale] ?? value.name;
@@ -276,7 +277,7 @@ export function App() {
                 <span className="brand-mark"><Dice5 size={23} /></span><span>finance<span className="brand-light">gameinator</span><span className="brand-dot">.</span></span>
             </button>
             <span className="header-note"><span className="small-dot" /> {session ? t('header.openTable') : t('header.tagline')}</span>
-            <label className="language-picker"><span className="sr-only">{t('header.language')}</span><select aria-label={t('header.language')} value={locale} onChange={event => setLocale(event.target.value as Locale)}><option value="pt-BR">Português (Brasil)</option><option value="en">English</option></select></label>
+            <label className="language-picker"><span className="sr-only">{t('header.language')}</span><Languages size={16} aria-hidden="true" /><select aria-label={t('header.language')} value={locale} onChange={event => setLocale(event.target.value as Locale)}><option value="pt-BR">Português</option><option value="en">English</option></select><ChevronDown size={14} aria-hidden="true" /></label>
             {session && <button className="icon-button" title="Sair da sala" aria-label="Sair da sala" onClick={() => setConfirmLeave(true)}><LogOut size={20} /></button>}
         </header>
 
@@ -347,7 +348,7 @@ export function App() {
                         {gameTab === 'board' && paymentCard}
                         {game.pendingAction?.playerId === session.playerId && game.pendingAction.type === 'buy' && me && me.balance < game.pendingAction.amount && <div className="action-card debt-card"><div className="eyebrow">{t('purchase.finance')}</div><h2>{t('payment.shortfall', { amount: money(game.pendingAction.amount - me.balance) })}</h2><p>{t('purchase.afterLoan')}</p><button className="button secondary full-button" onClick={() => setGameTab('bank')}>{t('loan.request')}</button></div>}
                         <div className="turn-card"><div className="eyebrow">{t('game.turn')}</div><div className="turn-player"><span className="token-large" style={{ background: currentPlayer?.color }}>{currentPlayer?.name.slice(0, 1)}</span><div><strong>{currentPlayer?.name}</strong><span>{currentPlayer?.id === session.playerId ? t('game.yourTurn') : t('game.waitingTurn')}</span></div></div>{me?.jailed && <div className="jail-note">{t('game.jail', { attempts: me.jailAttempts })}</div>}
-                            <div className="dice-row">{game.lastRoll ? game.lastRoll.map((die, index) => <span className="die-face" key={index}>{die}</span>) : <span className="dice-placeholder"><Dice5 size={18} /> {t('game.rollPrompt')}</span>}</div>
+                            <div className="dice-row">{game.lastRoll ? game.lastRoll.map((die, index) => { const DieFace = dieFaceIcons[die - 1] ?? Dice1; const rollId = game.events.filter(event => event.type === 'roll').at(-1)?.id ?? 'initial-roll'; return <span className="die-face" key={`${rollId}-${index}`} role="img" aria-label={t('game.dieValue', { value: die })}><DieFace size={27} strokeWidth={1.8} /></span>; }) : <span className="dice-placeholder"><Dice5 size={18} /> {t('game.rollPrompt')}</span>}</div>
                             <button className="button primary roll-button" disabled={busy || game.currentPlayerId !== session.playerId || game.phase !== 'awaitingRoll' || connection !== 'online'} onClick={() => gameAction('game:roll')}><Dice5 size={20} /> {t('game.roll')} <ArrowRight size={18} className="button-end" /></button>
                         </div>
                         {game.pendingAction?.playerId === session.playerId && game.pendingAction.type === 'buy' && <div className="action-card"><div className="eyebrow">{t('purchase.opportunity')}</div><h2>{localizedName(board.properties.find(property => property.id === game.pendingAction?.propertyId) ?? { name: '' }, locale)}</h2><p>{t('purchase.buyFor', { amount: money(game.pendingAction.amount) })}</p><div className="action-buttons"><button className="button primary" disabled={busy || me!.balance < game.pendingAction.amount} onClick={() => gameAction('game:buy', { accept: true })}><Check size={18} /> {t('purchase.buy')}</button><button className="button secondary" disabled={busy} onClick={() => gameAction('game:buy', { accept: false })}>{t('purchase.pass')}</button></div></div>}
