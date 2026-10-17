@@ -19,6 +19,12 @@
     },
     "financialEducation": {
         "emergencyFundInterestRateBpsPerCycle": 50,
+        "personalGoalTargets": {
+            "emergencyFundTarget": 50000,
+            "financialSecurityTarget": 75,
+            "maxOutstandingDebt": 0,
+            "leisureEventCount": 2
+        },
         "fixedIncomeProducts": [
             {
                 "id": "liquid-note",

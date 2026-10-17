@@ -36,6 +36,22 @@ export interface FixedIncomeProductDefinition {
 export interface FinancialEducationRules {
     emergencyFundInterestRateBpsPerCycle: number;
     fixedIncomeProducts: FixedIncomeProductDefinition[];
+    goalTargets: PersonalGoalTargets;
+}
+
+export interface PersonalGoalTargets {
+    emergencyFundTarget: number;
+    financialSecurityTarget: number;
+    maxOutstandingDebt: number;
+    leisureEventCount: number;
+}
+
+export interface QualityOfLifeAttributes {
+    happiness: number; financialSecurity: number; wellBeing: number; personalDevelopment: number; socialLife: number;
+}
+
+export interface PersonalGoalProgress {
+    id: string; progress: number; target: number; completed: boolean;
 }
 
 export interface BoardDefinition {
@@ -50,6 +66,7 @@ export interface GamePlayer {
     id: string; name: string; color: string; position: number; balance: number;
     jailed: boolean; jailAttempts: number; currentJailFee: number; skipTurns: number; active: boolean; loanAvailableThisCycle: boolean;
     emergencyFundBalance: number; emergencyFundInterestPrevious: number; emergencyFundInterestTotal: number; emergencyFundLastProcessedCycle: number;
+    qualityOfLife: QualityOfLifeAttributes; leisureEventCount: number; completedGoals: string[]; qualityOfLifeProcessedEventSequence: number;
 }
 
 export interface Loan {
@@ -94,7 +111,7 @@ export interface GameState {
     transactions: FinancialTransaction[]; transactionKeys: string[];
 }
 
-export type GameEventType = 'gameStarted' | 'turn' | 'roll' | 'move' | 'purchase' | 'rent' | 'tax' | 'bonus' | 'holiday' | 'jail' | 'jailEscape' | 'bail' | 'loan' | 'build' | 'sale' | 'repayment' | 'paymentDue' | 'propertyOffer' | 'propertyTransfer' | 'bankruptcy' | 'victory' | 'pass' | 'emergencyFundDeposit' | 'emergencyFundWithdrawal' | 'emergencyFundInterest' | 'investmentCreated' | 'investmentMatured' | 'investmentClaimed' | 'investmentEarlyWithdrawal';
+export type GameEventType = 'gameStarted' | 'turn' | 'roll' | 'move' | 'purchase' | 'rent' | 'tax' | 'bonus' | 'holiday' | 'jail' | 'jailEscape' | 'bail' | 'loan' | 'build' | 'sale' | 'repayment' | 'paymentDue' | 'propertyOffer' | 'propertyTransfer' | 'bankruptcy' | 'victory' | 'pass' | 'emergencyFundDeposit' | 'emergencyFundWithdrawal' | 'emergencyFundInterest' | 'investmentCreated' | 'investmentMatured' | 'investmentClaimed' | 'investmentEarlyWithdrawal' | 'goalCompleted' | 'qualityOfLifeChanged';
 export interface GameEvent { id: string; sequence: number; type: GameEventType; playerId: string | null; message: string; details: Record<string, string | number | boolean | null>; }
 export interface FinancialTransaction { id: string; type: GameEventType; from: string | 'bank'; to: string | 'bank'; amount: number; description: string; details?: Record<string, string | number | boolean | null>; }
 
@@ -182,7 +199,15 @@ export function validateBoard(input: unknown): BoardDefinition {
         if (product.maturityBehavior !== 'claimWithConfirmation' || !['together', 'separate'].includes(String(product.maturityPayout))) throw new Error(`Product ${product.id} must define a supported confirmed maturity payout.`);
         return product as unknown as FixedIncomeProductDefinition;
     });
-    const financialEducation: FinancialEducationRules = { emergencyFundInterestRateBpsPerCycle: emergencyFundInterestRateBpsPerCycle as number, fixedIncomeProducts };
+    const goalsConfig = educationConfig.personalGoalTargets && typeof educationConfig.personalGoalTargets === 'object' ? educationConfig.personalGoalTargets as Record<string, unknown> : {};
+    const personalGoalTargets = {
+        emergencyFundTarget: goalsConfig.emergencyFundTarget ?? Math.round((board.startingBalance as number) / 6),
+        financialSecurityTarget: goalsConfig.financialSecurityTarget ?? 75,
+        maxOutstandingDebt: goalsConfig.maxOutstandingDebt ?? 0,
+        leisureEventCount: goalsConfig.leisureEventCount ?? 2,
+    };
+    if (!isAmount(personalGoalTargets.emergencyFundTarget) || !isAmount(personalGoalTargets.maxOutstandingDebt) || !Number.isSafeInteger(personalGoalTargets.financialSecurityTarget) || (personalGoalTargets.financialSecurityTarget as number) < 0 || (personalGoalTargets.financialSecurityTarget as number) > 100 || !Number.isSafeInteger(personalGoalTargets.leisureEventCount) || (personalGoalTargets.leisureEventCount as number) < 1 || (personalGoalTargets.leisureEventCount as number) > 100) throw new Error('Personal goal targets are invalid.');
+    const financialEducation: FinancialEducationRules = { emergencyFundInterestRateBpsPerCycle: emergencyFundInterestRateBpsPerCycle as number, fixedIncomeProducts, goalTargets: personalGoalTargets as PersonalGoalTargets };
     if (board.victoryCondition !== undefined && board.victoryCondition !== 'lastSolventPlayer') throw new Error('Unsupported victory condition.');
     if (board.bankruptcyRule !== undefined && board.bankruptcyRule !== 'transferToCreditor') throw new Error('Unsupported bankruptcy rule.');
     const normalizedProperties = (board.properties as Record<string, unknown>[]).map(property => ({
@@ -204,7 +229,7 @@ export function startGame(board: BoardDefinition, players: { id: string; name: s
     }
     const start = board.spaces.findIndex(space => space.type === 'start');
     const state: GameState = {
-        boardId: board.id, status: 'playing', players: players.map(player => ({ id: player.id, name: player.name, color: player.color, position: start, balance: board.startingBalance, jailed: false, jailAttempts: 0, currentJailFee: board.jailFee, skipTurns: 0, active: true, loanAvailableThisCycle: true, emergencyFundBalance: 0, emergencyFundInterestPrevious: 0, emergencyFundInterestTotal: 0, emergencyFundLastProcessedCycle: 0 })),
+        boardId: board.id, status: 'playing', players: players.map(player => ({ id: player.id, name: player.name, color: player.color, position: start, balance: board.startingBalance, jailed: false, jailAttempts: 0, currentJailFee: board.jailFee, skipTurns: 0, active: true, loanAvailableThisCycle: true, emergencyFundBalance: 0, emergencyFundInterestPrevious: 0, emergencyFundInterestTotal: 0, emergencyFundLastProcessedCycle: 0, qualityOfLife: { happiness: 55, financialSecurity: 60, wellBeing: 55, personalDevelopment: 40, socialLife: 50 }, leisureEventCount: 0, completedGoals: [], qualityOfLifeProcessedEventSequence: 0 })),
         currentPlayerId: players[0].id, winnerId: null, phase: 'awaitingRoll', propertyOwners: {}, houses: {}, loans: [], investments: [], pendingAction: null, pendingLoan: null, pendingOffer: null, pendingPayments: [], pendingLandingPosition: null, offersThisTurn: 0, builtThisTurn: false, startCrossings: {}, lastRoll: null, log: [], events: [], transactions: [], transactionKeys: [],
     };
     recordEvent(state, 'gameStarted', players[0].id, `${players[0].name} inicia uma partida em ${board.name}.`, { boardId: board.id, playerCount: players.length });
@@ -368,12 +393,18 @@ export function withdrawFixedIncomeEarly(state: GameState, playerId: string, inv
     return state;
 }
 
+function clampAttribute(value: number) {
+    return Math.max(0, Math.min(100, Math.round(value)));
+}
+
 function processFinancialCycle(state: GameState, board: BoardDefinition, player: GamePlayer, cycle: number) {
     if (cycle > player.emergencyFundLastProcessedCycle) {
-        const interest = roundedBasisPointAmount(player.emergencyFundBalance, board.financialEducation.emergencyFundInterestRateBpsPerCycle);
+        const interest = player.emergencyFundBalance > 0
+            ? roundedBasisPointAmount(player.emergencyFundBalance, board.financialEducation.emergencyFundInterestRateBpsPerCycle)
+            : 0;
         if (interest > 0) {
             const key = `emergency-fund:interest:${player.id}:${cycle}`;
-            if (recordAccountTransaction(state, 'emergencyFundInterest', player.id, interest, `${player.name} recebe ${interest} de juros no fundo de emergencia no ciclo ${cycle}.`, key, { cycle, rateBpsPerCycle: board.financialEducation.emergencyFundInterestRateBpsPerCycle })) {
+            if (recordAccountTransaction(state, 'emergencyFundInterest', player.id, interest, `${player.name} recebe ${interest} de juros no fundo de emergencia.`, key, { cycle, rateBpsPerCycle: board.financialEducation.emergencyFundInterestRateBpsPerCycle })) {
                 player.emergencyFundBalance = addSafeMoney(player.emergencyFundBalance, interest);
                 player.emergencyFundInterestTotal = addSafeMoney(player.emergencyFundInterestTotal, interest);
             }
@@ -391,6 +422,106 @@ function processFinancialCycle(state: GameState, board: BoardDefinition, player:
             investment.status = 'matured';
             recordEvent(state, 'investmentMatured', player.id, `${player.name}: ${investment.productName} venceu; ${investment.maturityAmount} aguardam confirmacao de resgate.`, { investmentId: investment.id, productName: investment.productNameEnglish, maturityCycle: cycle, principal: investment.principal, accruedInterest: investment.accruedInterest, maturityAmount: investment.maturityAmount });
         }
+    }
+}
+
+function scaledAttributeScore(amount: bigint, cap: number, baseline: bigint) {
+    const scaled = (amount * BigInt(cap) + baseline / 2n) / baseline;
+    return Number(scaled > BigInt(cap) ? BigInt(cap) : scaled);
+}
+
+function financialSecurityScore(state: GameState, board: BoardDefinition, player: GamePlayer) {
+    const baseline = BigInt(Math.max(board.startingBalance, 1));
+    const liquidReserves = BigInt(Math.max(0, player.balance)) + BigInt(player.emergencyFundBalance);
+    const outstandingDebt = state.loans.filter(loan => loan.borrowerId === player.id && loan.installmentsRemaining > 0).reduce((sum, loan) => sum + BigInt(loan.outstanding), 0n);
+    const lockedPrincipal = state.investments.filter(investment => investment.investorId === player.id && (investment.status === 'active' || (investment.status === 'matured' && !investment.principalClaimed))).reduce((sum, investment) => sum + BigInt(investment.principal), 0n);
+    return clampAttribute(25 + scaledAttributeScore(liquidReserves, 35, baseline) + scaledAttributeScore(BigInt(player.emergencyFundBalance), 25, baseline) - scaledAttributeScore(outstandingDebt, 55, baseline) - scaledAttributeScore(lockedPrincipal, 20, baseline));
+}
+
+export function getPersonalGoalProgress(state: GameState, board: BoardDefinition, playerId: string): PersonalGoalProgress[] {
+    const player = state.players.find(candidate => candidate.id === playerId);
+    if (!player) throw new Error('Jogador nao encontrado para avaliar metas.');
+    const targets = board.financialEducation.goalTargets;
+    const transactions = state.transactions;
+    const borrowedTotal = transactions.filter(transaction => transaction.type === 'loan' && transaction.to === playerId).reduce((sum, transaction) => {
+        const total = transaction.details?.totalRepayment;
+        return sum + (typeof total === 'number' ? total : transaction.amount);
+    }, 0);
+    const repaidTotal = transactions.filter(transaction => transaction.type === 'repayment' && transaction.from === playerId).reduce((sum, transaction) => sum + transaction.amount, 0);
+    const outstandingDebt = state.loans.filter(loan => loan.borrowerId === playerId && loan.installmentsRemaining > 0).reduce((sum, loan) => sum + loan.outstanding, 0);
+    const propertyCount = Object.values(state.propertyOwners).filter(ownerId => ownerId === playerId).length;
+    const startedInvesting = transactions.some(transaction => transaction.type === 'investmentCreated' && transaction.from === playerId);
+    const goals: { id: string; progress: number; target: number; condition: boolean }[] = [
+        { id: 'emergency-fund', progress: Math.min(player.emergencyFundBalance, targets.emergencyFundTarget), target: targets.emergencyFundTarget, condition: player.emergencyFundBalance >= targets.emergencyFundTarget },
+        { id: 'financial-security', progress: Math.min(player.qualityOfLife.financialSecurity, targets.financialSecurityTarget), target: targets.financialSecurityTarget, condition: player.qualityOfLife.financialSecurity >= targets.financialSecurityTarget },
+        { id: 'reduce-debt', progress: borrowedTotal > 0 ? Math.min(borrowedTotal, Math.max(0, borrowedTotal - outstandingDebt)) : 0, target: borrowedTotal || 1, condition: borrowedTotal > 0 && outstandingDebt <= targets.maxOutstandingDebt && repaidTotal >= borrowedTotal - targets.maxOutstandingDebt },
+        { id: 'start-investing', progress: startedInvesting ? 1 : 0, target: 1, condition: startedInvesting },
+        { id: 'own-property', progress: Math.min(propertyCount, 1), target: 1, condition: propertyCount > 0 },
+        { id: 'enjoy-life', progress: Math.min(player.leisureEventCount, targets.leisureEventCount), target: targets.leisureEventCount, condition: player.leisureEventCount >= targets.leisureEventCount },
+    ];
+    return goals.map(goal => ({ ...goal, completed: player.completedGoals.includes(goal.id) || goal.condition }));
+}
+
+export function updateQualityOfLife(state: GameState, board: BoardDefinition) {
+    const changes = new Map<string, { attributes: Set<string>; reasons: Set<string> }>();
+    const changed = (playerId: string, attribute: keyof QualityOfLifeAttributes, reason: string) => {
+        const entry = changes.get(playerId) ?? { attributes: new Set<string>(), reasons: new Set<string>() };
+        entry.attributes.add(attribute);
+        entry.reasons.add(reason);
+        changes.set(playerId, entry);
+    };
+    const bump = (player: GamePlayer | undefined, attribute: keyof QualityOfLifeAttributes, delta: number, reason: string) => {
+        if (!player || delta === 0) return;
+        const before = player.qualityOfLife[attribute];
+        const after = clampAttribute(before + delta);
+        if (after === before) return;
+        player.qualityOfLife[attribute] = after;
+        changed(player.id, attribute, reason);
+    };
+
+    for (const player of state.players) {
+        for (const event of state.events) {
+            if (event.sequence <= player.qualityOfLifeProcessedEventSequence) continue;
+            if (event.type === 'holiday' && event.playerId === player.id && event.details.restfulVisit === true) {
+                player.leisureEventCount++;
+                bump(player, 'happiness', 3, 'leisure');
+                bump(player, 'wellBeing', 2, 'leisure');
+                bump(player, 'socialLife', 2, 'leisure');
+            } else if (event.type === 'investmentCreated' && event.playerId === player.id) {
+                bump(player, 'personalDevelopment', 3, 'investment');
+            } else if (event.type === 'investmentMatured' && event.playerId === player.id) {
+                bump(player, 'personalDevelopment', 2, 'investment');
+            } else if (event.type === 'propertyTransfer') {
+                if (event.playerId === player.id) bump(player, 'socialLife', 2, 'trade');
+                if (event.details.previousOwnerId === player.id) bump(player, 'socialLife', 1, 'trade');
+            }
+        }
+    }
+
+    for (const player of state.players) {
+        const before = player.qualityOfLife.financialSecurity;
+        const after = financialSecurityScore(state, board, player);
+        if (after !== before) {
+            player.qualityOfLife.financialSecurity = after;
+            const reason = state.events.slice(-8).some(event => event.playerId === player.id && ['loan', 'repayment'].includes(event.type)) ? 'debt'
+                : state.events.slice(-8).some(event => event.playerId === player.id && ['emergencyFundDeposit', 'emergencyFundWithdrawal', 'emergencyFundInterest'].includes(event.type)) ? 'reserve'
+                    : state.events.slice(-8).some(event => event.playerId === player.id && ['investmentCreated', 'investmentClaimed', 'investmentEarlyWithdrawal'].includes(event.type)) ? 'investment' : 'financial-event';
+            changed(player.id, 'financialSecurity', reason);
+        }
+    }
+
+    for (const [playerId, change] of changes) {
+        const player = state.players.find(candidate => candidate.id === playerId);
+        if (player) recordEvent(state, 'qualityOfLifeChanged', playerId, `${player.name}: qualidade de vida atualizada.`, { attributes: [...change.attributes].join(','), reasons: [...change.reasons].join(',') });
+    }
+    for (const player of state.players) {
+        for (const goal of getPersonalGoalProgress(state, board, player.id)) {
+            if (goal.completed && !player.completedGoals.includes(goal.id)) {
+                player.completedGoals.push(goal.id);
+                recordEvent(state, 'goalCompleted', player.id, `${player.name} completou a meta ${goal.id}.`, { goalId: goal.id });
+            }
+        }
+        player.qualityOfLifeProcessedEventSequence = state.events.at(-1)?.sequence ?? player.qualityOfLifeProcessedEventSequence;
     }
 }
 
@@ -536,7 +667,7 @@ function resolveSpecialLanding(state: GameState, board: BoardDefinition, player:
         return state;
     }
     if (space.type === 'bonus') applyTransaction(state, 'bonus', 'bank', player.id, space.amount, `${player.name} recebe bonus de ${space.amount}.`);
-    if (space.type === 'holiday') recordEvent(state, 'holiday', player.id, `${player.name} vai perder a proxima vez.`);
+    if (space.type === 'holiday') recordEvent(state, 'holiday', player.id, `${player.name} vai perder a proxima vez.`, { restfulVisit: true });
     return advanceAfterLanding(state, player);
 }
 

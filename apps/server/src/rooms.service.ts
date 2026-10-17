@@ -4,7 +4,7 @@ import { mkdirSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
 import { BoardsService } from './boards.service';
-import { acceptPlayerLoan, buildProperty, buyProperty, cancelPlayerLoanRequest, claimFixedIncomeInvestment, createFixedIncomeInvestment, declareBankruptcy, declineBail, depositEmergencyFund, finishTurn, GameState, payBail, repayLoan, requestPlayerLoan, respondPlayerLoan, respondPropertyOffer, resolveRent, roll, sellBuilding, sellProperty, sendPropertyOffer, startGame, takeBankLoan, TOKEN_COLORS, withdrawEmergencyFund, withdrawFixedIncomeEarly } from './game-engine';
+import { acceptPlayerLoan, buildProperty, buyProperty, cancelPlayerLoanRequest, claimFixedIncomeInvestment, createFixedIncomeInvestment, declareBankruptcy, declineBail, depositEmergencyFund, finishTurn, GameState, payBail, repayLoan, requestPlayerLoan, respondPlayerLoan, respondPropertyOffer, resolveRent, roll, sellBuilding, sellProperty, sendPropertyOffer, startGame, takeBankLoan, TOKEN_COLORS, updateQualityOfLife, withdrawEmergencyFund, withdrawFixedIncomeEarly } from './game-engine';
 
 export interface RoomView {
     code: string;
@@ -94,6 +94,13 @@ export class RoomsService implements OnModuleDestroy {
             if (!Number.isSafeInteger(player.emergencyFundInterestPrevious)) { player.emergencyFundInterestPrevious = 0; changed = true; }
             if (!Number.isSafeInteger(player.emergencyFundInterestTotal)) { player.emergencyFundInterestTotal = 0; changed = true; }
             if (!Number.isSafeInteger(player.emergencyFundLastProcessedCycle)) { player.emergencyFundLastProcessedCycle = Number.isSafeInteger(game.startCrossings?.[player.id]) ? game.startCrossings[player.id] : 0; changed = true; }
+            if (!player.qualityOfLife || typeof player.qualityOfLife !== 'object') { player.qualityOfLife = { happiness: 55, financialSecurity: 60, wellBeing: 55, personalDevelopment: 40, socialLife: 50 }; changed = true; }
+            for (const attribute of ['happiness', 'financialSecurity', 'wellBeing', 'personalDevelopment', 'socialLife'] as const) {
+                if (!Number.isSafeInteger(player.qualityOfLife[attribute]) || player.qualityOfLife[attribute] < 0 || player.qualityOfLife[attribute] > 100) { player.qualityOfLife[attribute] = 50; changed = true; }
+            }
+            if (!Number.isSafeInteger(player.leisureEventCount) || player.leisureEventCount < 0) { player.leisureEventCount = 0; changed = true; }
+            if (!Array.isArray(player.completedGoals)) { player.completedGoals = []; changed = true; }
+            if (!Number.isSafeInteger(player.qualityOfLifeProcessedEventSequence)) { player.qualityOfLifeProcessedEventSequence = game.events?.length ?? game.log?.length ?? 0; changed = true; }
         }
         if (game.winnerId === undefined) { game.winnerId = null; changed = true; }
         if (!Array.isArray(game.events)) {
@@ -263,6 +270,7 @@ export class RoomsService implements OnModuleDestroy {
             case 'game:respond-property-offer': respondPropertyOffer(game, identity.playerId, payload.accept === true, board); break;
             default: throw new BadRequestException('Acao de jogo desconhecida.');
         }
+        updateQualityOfLife(game, board);
         this.db.prepare('UPDATE rooms SET game_json = ? WHERE code = ?').run(JSON.stringify(game), identity.code);
         return this.view(identity.code);
     }

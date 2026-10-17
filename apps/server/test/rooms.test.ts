@@ -168,6 +168,10 @@ test('SQLite restores emergency-fund balances and active fixed-income investment
         assert.equal(snapshot.investments[0].principal, 50000);
         assert.equal(snapshot.investments[0].estimatedMaturityAmount, 51500);
         assert.equal(snapshot.investments[0].status, 'active');
+        assert.equal(snapshot.players[0].qualityOfLife.personalDevelopment, 43);
+        assert.equal(snapshot.players[0].completedGoals.includes('start-investing'), true);
+        assert.equal(snapshot.players[0].leisureEventCount, 0);
+        assert.equal(snapshot.players[0].qualityOfLifeProcessedEventSequence, snapshot.events.at(-1)?.sequence);
         assert.equal(invested.game?.investments[0].id, snapshot.investments[0].id);
         assert.deepEqual(snapshot.transactions.map(transaction => transaction.type), ['emergencyFundDeposit', 'investmentCreated']);
     } finally { restored.onModuleDestroy(); rmSync(directory, { recursive: true }); }

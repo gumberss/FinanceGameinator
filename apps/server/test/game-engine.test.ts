@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { acceptPlayerLoan, applyTransaction, buildProperty, buyProperty, calculateBankInterestRate, calculateEarlyWithdrawalTerms, calculateFixedIncomeTerms, cancelPlayerLoanRequest, calculateLoanTerms, claimFixedIncomeInvestment, createFixedIncomeInvestment, declineBail, declareBankruptcy, depositEmergencyFund, finishTurn, GameState, payBail, repayLoan, requestPlayerLoan, respondPlayerLoan, respondPropertyOffer, resolveRent, roll, sellBuilding, sellProperty, sendPropertyOffer, startGame, takeBankLoan, TOKEN_COLORS, validateBoard, withdrawEmergencyFund, withdrawFixedIncomeEarly } from '../src/game-engine';
+import { acceptPlayerLoan, applyTransaction, buildProperty, buyProperty, calculateBankInterestRate, calculateEarlyWithdrawalTerms, calculateFixedIncomeTerms, cancelPlayerLoanRequest, calculateLoanTerms, claimFixedIncomeInvestment, createFixedIncomeInvestment, declineBail, declareBankruptcy, depositEmergencyFund, finishTurn, GameState, getPersonalGoalProgress, payBail, repayLoan, requestPlayerLoan, respondPlayerLoan, respondPropertyOffer, resolveRent, roll, sellBuilding, sellProperty, sendPropertyOffer, startGame, takeBankLoan, TOKEN_COLORS, updateQualityOfLife, validateBoard, withdrawEmergencyFund, withdrawFixedIncomeEarly } from '../src/game-engine';
 
 const board = validateBoard(JSON.parse(readFileSync(resolve(__dirname, '../boards/classic.json'), 'utf8')));
 const players = [{ id: 'one', name: 'Ana', online: true, color: TOKEN_COLORS[0] }, { id: 'two', name: 'Bia', online: true, color: TOKEN_COLORS[1] }];
@@ -14,6 +14,37 @@ test('board data validates and game starts at configured first space with select
     assert.equal(state.players[0].balance, board.startingBalance);
     assert.equal(state.currentPlayerId, 'one');
     assert.equal(board.properties[0].price / 2, 40000);
+});
+
+test('quality-of-life updates are bounded and idempotent without changing the winner', () => {
+    const state = startGame(board, players);
+    const player = state.players[0];
+    assert.equal(player.qualityOfLife.financialSecurity, 60);
+    player.qualityOfLife.happiness = 99;
+    roll(state, board, player.id, [1, 1]);
+    updateQualityOfLife(state, board);
+    assert.equal(player.leisureEventCount, 1);
+    assert.equal(player.qualityOfLife.happiness, 100);
+    assert.equal(player.qualityOfLife.wellBeing, 57);
+    assert.equal(player.qualityOfLife.socialLife, 52);
+    const afterFirstUpdate = structuredClone(state);
+    updateQualityOfLife(state, board);
+    assert.deepEqual(state, afterFirstUpdate);
+    assert.equal(state.status, 'playing');
+    assert.equal(state.winnerId, null);
+});
+
+test('completed personal goals remain complete after their condition later stops holding', () => {
+    const state = startGame(board, players);
+    const player = state.players[0];
+    const target = board.financialEducation.goalTargets.emergencyFundTarget;
+    player.emergencyFundBalance = target;
+    updateQualityOfLife(state, board);
+    assert.equal(getPersonalGoalProgress(state, board, player.id).find(goal => goal.id === 'emergency-fund')?.completed, true);
+    player.emergencyFundBalance = 0;
+    updateQualityOfLife(state, board);
+    assert.equal(getPersonalGoalProgress(state, board, player.id).find(goal => goal.id === 'emergency-fund')?.completed, true);
+    assert.equal(state.events.filter(event => event.type === 'goalCompleted' && event.playerId === player.id && event.details.goalId === 'emergency-fund').length, 1);
 });
 
 test('configuration rejects duplicate spaces, missing properties, and multiple start locations', () => {

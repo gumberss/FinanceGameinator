@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Banknote, CalendarDays, Check, ChevronDown, HandCoins, Landmark, LoaderCircle, Wallet, X } from 'lucide-react';
+import { Banknote, CalendarDays, Check, ChevronDown, HandCoins, Landmark, LoaderCircle, ShieldCheck, Wallet, X } from 'lucide-react';
 import type { Locale, TranslationKey } from './i18n';
 
 type Loan = { id: string; type: string; lenderId: string; principal: number; interestRate: number; installmentsTotal: number; installmentsRemaining: number; installmentAmount: number; outstanding: number };
@@ -13,9 +13,19 @@ type Investment = { id: string; productId: string; productName: string; productN
 type InvestmentTerms = { principal: number; interestAmount: number; maturityAmount: number; rateBpsPerCycle: number; termCycles: number; interestMethod: 'simple' | 'compound' };
 type Action = (event: string, payload?: Record<string, unknown>) => void;
 type Translate = (key: TranslationKey, values?: Record<string, string | number>) => string;
+type SummaryMetric = { label: string; value: string; featured?: boolean };
+
+function FinancialSummary({ items, className = '' }: { items: SummaryMetric[]; className?: string }) {
+    return <dl className={`financial-summary ${className}`}>
+        {items.map(item => <div className={item.featured ? 'featured' : ''} key={item.label}>
+            <dt>{item.label}</dt>
+            <dd>{item.value}</dd>
+        </div>)}
+    </dl>;
+}
 
 interface AccountTabProps {
-    view: 'account' | 'investments';
+    view: 'account' | 'bank' | 'investments';
     locale: Locale;
     t: Translate;
     money: (amount: number) => string;
@@ -74,12 +84,15 @@ export function AccountTab(props: AccountTabProps) {
     const [investmentOperationId, setInvestmentOperationId] = useState('');
     const [investmentAction, setInvestmentAction] = useState<{ investmentId: string; kind: 'claim' | 'early'; part?: 'together' | 'principal' | 'interest' } | null>(null);
     const {
-        view, t, money, balance, phase, activeLoans, investments, transactions, payment, pendingLoan, playerId, playerName,
+        view, t, money, balance, phase, activeLoans, investments, transactions, payment: providedPayment, pendingLoan, playerId, playerName,
         players, canRequestLoan, loanAvailableThisCycle, maxActiveLoans, maxInstallments, busy, loanAmount, onLoanAmount,
         installments, onInstallments, interestPercent, onInterestPercent, lenderId, onLenderId,
         bankTerms, requestTerms, offerPrincipal, onOfferPrincipal, offerInterest, onOfferInterest,
         offerTerms, onAction,
     } = props;
+    const payment = view === 'bank'
+        ? providedPayment?.type === 'loanInstallment' ? providedPayment : null
+        : view === 'account' && providedPayment?.type !== 'loanInstallment' ? providedPayment : null;
     const currentLender = lenderId || players.find(player => player.id !== playerId)?.id || '';
     const numberLocale = props.locale === 'en' ? 'en-US' : 'pt-BR';
     const formatPercent = (rateBps: number) => `${new Intl.NumberFormat(numberLocale, { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(rateBps / 100)}%`;
@@ -143,16 +156,26 @@ export function AccountTab(props: AccountTabProps) {
     };
 
     return <section className={`asset-panel account-panel ${view === 'investments' ? 'investments-panel' : ''}`}>
-        {view === 'account' && <>
-            <div className="asset-header"><span className="asset-icon"><Wallet size={24} /></span><div><div className="eyebrow">{t('account.balance')}</div><h2>{money(balance)}</h2></div></div>
-            <p className="asset-description">{t('account.description')}</p>
+        {(view === 'account' || view === 'bank') && <>
+            {view === 'account' ? <>
+                <div className="asset-header"><span className="asset-icon"><Wallet size={24} /></span><div><div className="eyebrow">{t('account.balance')}</div><h2>{money(balance)}</h2></div></div>
+                <p className="asset-description">{t('account.description')}</p>
+            </> : <>
+                <div className="asset-header"><span className="asset-icon"><Landmark size={24} /></span><div><div className="eyebrow">{t('nav.bank')}</div><h2>{t('bank.heading')}</h2></div></div>
+                <p className="asset-description">{t('bank.description')}</p>
+            </>}
 
             {payment && <section className="account-section pending-payment"><div className="eyebrow">{payment.type === 'loanInstallment' ? t('payment.installment') : t('payment.pending')}</div><h3>{money(payment.amount)}</h3><p>{payment.type === 'rent' ? t('payment.rentTo', { player: payment.recipientName }) : payment.type === 'tax' ? t('payment.bankTax') : t('payment.installmentDetails', { number: payment.installmentNumber ?? 1, total: payment.installmentsTotal ?? 1, balance: money(payment.outstanding ?? 0) })}</p>{balance >= payment.amount ? <button className="button primary" disabled={busy || confirmPayment} onClick={() => setConfirmPayment(true)}><Check size={18} />{t('payment.payNow')}</button> : <p>{t('payment.shortfall', { amount: money(payment.amount - balance) })}</p>}{confirmPayment && <div className="payment-confirm"><p>{t('payment.confirmPrompt', { amount: money(payment.amount) })}</p><div className="action-buttons"><button className="button primary" disabled={busy} onClick={() => { onAction('game:pay', { paymentId: payment.id }); setConfirmPayment(false); }}><Check size={18} />{t('payment.confirm')}</button><button className="button secondary" disabled={busy} onClick={() => setConfirmPayment(false)}><X size={16} />{t('leave.cancel')}</button></div></div>}</section>}
 
+            <div className="bank-sections" hidden={view !== 'bank'}>
             {canRequestLoan && <section className="account-section loan-request-section"><div className="debt-heading"><h3>{t('loan.request')}</h3><span>{t('loan.activeCount', { count: activeLoans.length })}</span></div><p className="account-hint">{t('loan.cycleAvailable')} {t('loan.activeLimit', { max: maxActiveLoans })}</p>
                 <label htmlFor="account-loan-amount">{t('loan.amount')}</label><input id="account-loan-amount" type="number" min="1" step="1" value={loanAmount} onChange={event => onLoanAmount(event.target.value)} />
                 <label htmlFor="account-loan-installments">{t('loan.installments')}</label><input id="account-loan-installments" type="number" min="1" max={maxInstallments} step="1" value={installments} onChange={event => onInstallments(event.target.value)} />
-                <div className="loan-preview"><strong>{t('loan.rate')}: {bankTerms ? formatFractionPercent(bankTerms.interestRate) : '...'}</strong><span>{t('loan.installmentAmount')}: {bankTerms ? money(bankTerms.installmentAmount) : '...'}</span><span>{t('loan.total')}: {bankTerms ? money(bankTerms.totalRepayment) : '...'}</span></div>
+                <FinancialSummary items={[
+                    { label: t('loan.rate'), value: bankTerms ? formatFractionPercent(bankTerms.interestRate) : '...' },
+                    { label: t('loan.installmentAmount'), value: bankTerms ? money(bankTerms.installmentAmount) : '...' },
+                    { label: t('loan.total'), value: bankTerms ? money(bankTerms.totalRepayment) : '...', featured: true },
+                ]} />
                 <button className="button primary" disabled={busy || !loanRequestValid || !bankTerms || activeLoans.length >= maxActiveLoans || !loanAvailableThisCycle} onClick={() => onAction('game:bank-loan', { amount: Number(loanAmount), installments: Number(installments) })}><Banknote size={18} />{t('loan.requestBank')}</button>
                 {players.filter(player => player.id !== playerId).length > 0 && <div className="player-loan-request"><label htmlFor="account-loan-lender">{t('loan.selectLender')}</label><select id="account-loan-lender" value={currentLender} onChange={event => onLenderId(event.target.value)}>{players.filter(player => player.id !== playerId).map(player => <option key={player.id} value={player.id}>{player.name} · {money(player.balance)}</option>)}</select><label htmlFor="account-loan-rate">{t('loan.proposedRate')}</label><input id="account-loan-rate" type="number" min="0" max="100" step="0.1" value={interestPercent} onChange={event => onInterestPercent(event.target.value)} /><div className="loan-preview"><strong>{t('loan.installmentAmount')}: {requestTerms ? money(requestTerms.installmentAmount) : '...'}</strong><span>{t('loan.total')}: {requestTerms ? money(requestTerms.totalRepayment) : '...'}</span></div><button className="button secondary" disabled={busy || !loanRequestValid || !requestTerms || activeLoans.length >= maxActiveLoans || !loanAvailableThisCycle} onClick={() => onAction('game:request-player-loan', { lenderId: currentLender, amount: Number(loanAmount), installments: Number(installments), interestRate: Number(interestPercent) / 100 })}><HandCoins size={18} />{t('loan.requestPlayer')}</button></div>}
                 {!loanAvailableThisCycle && <p className="account-hint">{t('loan.cycleUsed')}</p>}{activeLoans.length >= maxActiveLoans && <p className="account-hint">{t('loan.maxActive')}</p>}
@@ -161,19 +184,26 @@ export function AccountTab(props: AccountTabProps) {
             {pendingLoan && <section className="account-section pending-loan-section"><div className="eyebrow">{t('loan.proposal')}</div>{pendingLoan.status === 'requested' && pendingLoan.lenderId === playerId ? <><h3>{players.find(player => player.id === pendingLoan.borrowerId)?.name} · {money(pendingLoan.requestedAmount)}</h3><p>{t('loan.installments')}: {pendingLoan.installmentsTotal}</p><label htmlFor="lender-offer-principal">{t('loan.principal')}</label><input id="lender-offer-principal" type="number" min={pendingLoan.requestedAmount} max={balance} value={offerPrincipal || String(pendingLoan.requestedAmount)} onChange={event => onOfferPrincipal(event.target.value)} /><label htmlFor="lender-offer-rate">{t('loan.rate')}</label><input id="lender-offer-rate" type="number" min="0" max="100" step="0.1" value={offerInterest} onChange={event => onOfferInterest(event.target.value)} /><div className="loan-preview"><span>{t('loan.installmentAmount')}: {offerTerms ? money(offerTerms.installmentAmount) : '...'}</span><span>{t('loan.total')}: {offerTerms ? money(offerTerms.totalRepayment) : '...'}</span></div><div className="action-buttons"><button className="button primary" disabled={busy || !offerTerms || !offerValid} onClick={() => onAction('game:respond-player-loan', { accept: true, principal: Number(offerPrincipal || pendingLoan.requestedAmount), interestRate: Number(offerInterest) / 100 })}>{t('loan.sendOffer')}</button><button className="button secondary" disabled={busy} onClick={() => onAction('game:respond-player-loan', { accept: false })}>{t('offer.reject')}</button></div></> : pendingLoan.status === 'requested' && pendingLoan.borrowerId === playerId ? <><p>{t('loan.requestPending')}</p><p>{pendingLoan.installmentsTotal} · {money(pendingLoan.requestedAmount)}</p><button className="button secondary" disabled={busy} onClick={() => onAction('game:cancel-player-loan')}>{t('loan.cancel')}</button></> : pendingLoan.status === 'offered' && pendingLoan.borrowerId === playerId ? <><h3>{t('loan.offerFrom', { player: players.find(player => player.id === pendingLoan.lenderId)?.name ?? '' })}</h3><p>{money(pendingLoan.principal ?? 0)} · {((pendingLoan.interestRate ?? 0) * 100).toFixed(1)}% · {pendingLoan.installmentsTotal}</p><p>{t('loan.installmentAmount')}: {money(Math.ceil((pendingLoan.principal! + Math.round(pendingLoan.principal! * pendingLoan.interestRate!)) / pendingLoan.installmentsTotal))}</p><p>{t('loan.total')}: {money(pendingLoan.principal! + Math.round(pendingLoan.principal! * pendingLoan.interestRate!))}</p><div className="action-buttons"><button className="button primary" disabled={busy} onClick={() => onAction('game:respond-player-loan', { accept: true })}>{t('loan.accept')}</button><button className="button secondary" disabled={busy} onClick={() => onAction('game:respond-player-loan', { accept: false })}>{t('offer.reject')}</button></div></> : <p>{t('loan.requestPending')}</p>}</section>}
 
             <section className="account-section"><div className="debt-heading"><h3>{t('loan.active')}</h3><span>{activeLoans.length}/{maxActiveLoans}</span></div>{activeLoans.length ? activeLoans.map(loan => <div className="loan-row" key={loan.id}><span>{loan.type === 'bank' ? t('loan.bank') : t('loan.fromPlayer', { player: players.find(player => player.id === loan.lenderId)?.name ?? '' })}<small>{loan.installmentsTotal - loan.installmentsRemaining}/{loan.installmentsTotal} · {money(loan.installmentAmount)} {t('loan.perInstallment')}</small></span><strong>{money(loan.outstanding)}</strong><button className="button secondary" disabled={busy || phase !== 'awaitingAction' || balance < loan.outstanding} onClick={() => onAction('game:repay-loan', { loanId: loan.id })}>{t('loan.payoff')}</button></div>) : <p className="empty-assets">{t('loan.noActive')}</p>}</section>
+            </div>
 
+            <div className="wallet-sections" hidden={view !== 'account'}>
             <section className="account-section"><div className="debt-heading"><h3>{t('account.history')}</h3><span>{transactions.length}</span></div><div className="transaction-list">{transactions.slice(-8).reverse().map(transaction => <div className="transaction-row" key={transaction.id}><span>{transaction.description}</span><strong>{money(transaction.amount)}</strong></div>)}</div></section>
 
             <section className="account-section emergency-fund-section">
-                <div className="debt-heading"><h3>{t('education.fundTitle')}</h3><strong>{money(props.emergencyFundBalance)}</strong></div>
-                <p>{t('education.fundIntro')}</p><p className="account-hint">{t('education.availableNow')}</p>
-                <div className="loan-preview"><span>{t('education.interestRate')}: {formatPercent(props.financialEducation.emergencyFundInterestRateBpsPerCycle)}</span><span>{t('education.previousInterest')}: {money(props.emergencyFundInterestPrevious)}</span><span>{t('education.totalInterest')}: {money(props.emergencyFundInterestTotal)}</span></div>
+                <header className="emergency-fund-heading"><span className="emergency-fund-icon"><ShieldCheck size={20} /></span><div className="emergency-fund-copy"><h3>{t('education.fundTitle')}</h3><p>{t('education.fundIntro')}</p></div><div className="emergency-fund-balance"><span>{t('education.fundBalance')}</span><strong>{money(props.emergencyFundBalance)}</strong></div></header>
+                <p className="account-hint fund-availability">{t('education.availableNow')}</p>
+                <FinancialSummary className="emergency-fund-metrics" items={[
+                    { label: t('education.interestRate'), value: formatPercent(props.financialEducation.emergencyFundInterestRateBpsPerCycle) },
+                    { label: t('education.previousInterest'), value: money(props.emergencyFundInterestPrevious) },
+                    { label: t('education.totalInterest'), value: money(props.emergencyFundInterestTotal), featured: true },
+                ]} />
                 <p className="account-hint">{t('education.cycleRule')}</p>
                 {props.pendingObligations > 0 && <p className="account-hint">{t('education.pendingObligations', { amount: money(props.pendingObligations) })}</p>}
                 <label htmlFor="emergency-fund-amount">{t('education.fundAmount')}</label><input id="emergency-fund-amount" type="number" min="1" step="1" value={fundAmount} onChange={event => setFundAmount(event.target.value)} />
                 <div className="action-buttons"><button className="button secondary" disabled={busy || !Number.isSafeInteger(Number(fundAmount)) || Number(fundAmount) <= 0 || balance < Number(fundAmount)} onClick={() => beginFundAction('deposit')}>{t('education.deposit')}</button><button className="button secondary" disabled={busy || !Number.isSafeInteger(Number(fundAmount)) || Number(fundAmount) <= 0 || props.emergencyFundBalance < Number(fundAmount)} onClick={() => beginFundAction('withdraw')}>{t('education.withdraw')}</button></div>
                 {fundAction && <div className="payment-confirm"><p>{t(fundAction === 'deposit' ? 'education.confirmDeposit' : 'education.confirmWithdraw', { amount: money(Number(fundAmount)) })}</p><div className="action-buttons"><button className="button primary" disabled={busy} onClick={confirmFundAction}>{t('payment.confirm')}</button><button className="button secondary" disabled={busy} onClick={() => setFundAction(null)}>{t('leave.cancel')}</button></div></div>}
             </section>
+            </div>
         </>}
 
         {view === 'investments' && <section className="investment-workspace">
