@@ -59,9 +59,13 @@ button {
 .site-header {
     height: 100px;
     max-width: 1200px;
+    padding: 8px 0 25px;
+    border: 0;
+    background: transparent;
     width: 100%;
     padding: 0 48px;
     margin: 0 auto;
+    min-width: 0;
     display: flex;
     align-items: center;
     gap: 20px;
@@ -1070,8 +1074,45 @@ input::placeholder {
     .site-header,
     main,
     .site-footer {
-        padding-left: 18px;
-        padding-right: 18px;
+        padding-left: 12px;
+        padding-right: 12px;
+    }
+
+    .site-header {
+        gap: 4px;
+    }
+
+    .brand {
+        flex: 0 1 auto;
+        min-width: 0;
+        gap: 5px;
+        font-size: 12px;
+    }
+
+    .brand-mark {
+        flex: 0 0 28px;
+        width: 28px;
+        height: 28px;
+    }
+
+    .language-picker {
+        flex: 0 1 84px;
+        min-width: 0;
+        margin-left: auto;
+    }
+
+    .language-picker select {
+        width: 100%;
+        max-width: 100%;
+        padding: 5px 2px;
+        font-size: 8px;
+    }
+
+    .site-header>.icon-button {
+        flex: 0 0 30px;
+        width: 30px;
+        height: 30px;
+        margin-left: 0;
     }
 
     .room-heading {
@@ -1093,6 +1134,10 @@ input::placeholder {
 
     .visual-chip {
         font-size: 8px;
+    }
+
+    .investment-summary {
+        grid-template-columns: 1fr;
     }
 }
 
@@ -1501,6 +1546,9 @@ input::placeholder {
 
 .investments-panel {
     max-width: 1080px;
+    padding: 8px 0 25px;
+    border: 0;
+    background: transparent;
 }
 
 .investment-workspace {
@@ -1545,9 +1593,14 @@ input::placeholder {
 
 .investment-summary>div {
     display: grid;
+    min-width: 0;
     gap: 5px;
     padding-left: 11px;
     border-left: 2px solid #88a27c;
+}
+
+.investment-summary span {
+    overflow-wrap: anywhere;
 }
 
 .investment-summary span,
@@ -1579,9 +1632,56 @@ input::placeholder {
     gap: 12px;
 }
 
+.investment-selector {
+    display: grid;
+    grid-template-columns: 20px minmax(0, 1fr) 18px;
+    align-items: center;
+    gap: 11px;
+    width: 100%;
+    min-width: 0;
+    min-height: 54px;
+    padding: 0 14px;
+    border: 1px solid #cbd8c8;
+    border-radius: 6px;
+    background: #fff;
+    color: #526b58;
+    transition: border-color 140ms ease, box-shadow 140ms ease;
+}
+
+.investment-selector:focus-within {
+    border-color: #4e8060;
+    box-shadow: 0 0 0 3px #4e80601f;
+}
+
+.investment-combobox {
+    width: 100%;
+    min-width: 0;
+    height: 52px;
+    padding: 0;
+    border: 0;
+    outline: 0;
+    appearance: none;
+    background: transparent;
+    color: #263a2e;
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    text-overflow: ellipsis;
+    cursor: pointer;
+}
+
+.investment-combobox:focus-visible {
+    outline: 0;
+}
+
+.investment-selector>svg:last-child {
+    color: #78887b;
+    pointer-events: none;
+}
+
 .investment-product-stats {
     display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     border-top: 1px solid #e0e7dd;
     border-bottom: 1px solid #e0e7dd;
 }
@@ -1599,6 +1699,7 @@ input::placeholder {
 .investment-product-stats strong {
     color: #2f5840;
     font-size: 13px;
+    overflow-wrap: anywhere;
 }
 
 .investment-order {
@@ -1612,6 +1713,7 @@ input::placeholder {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 12px;
+    min-width: 0;
 }
 
 .investment-order-inputs>div {
@@ -1993,14 +2095,19 @@ input::placeholder {
 }
 
 @media (max-width: 800px) {
+
     .investment-overview,
     .investment-order {
         grid-template-columns: 1fr;
     }
 
     .investment-summary {
-        grid-template-columns: repeat(3, minmax(0, 1fr));
+        grid-template-columns: repeat(2, minmax(0, 1fr));
         gap: 10px;
+    }
+
+    .investment-product-stats {
+        grid-template-columns: 1fr;
     }
 
     .investment-summary strong {

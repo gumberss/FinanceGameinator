@@ -23,11 +23,18 @@
             {
                 "id": "liquid-note",
                 "name": "Nota de Rendimento Liquida",
-                "nameTranslations": { "en": "Liquid Income Note" },
+                "nameTranslations": {
+                    "en": "Liquid Income Note"
+                },
                 "explanation": "Juros simples com resgate antecipado; o resgate antes do vencimento perde os juros acumulados.",
-                "explanationTranslations": { "en": "Simple interest with flexible early withdrawal; early access forfeits all earned interest." },
+                "explanationTranslations": {
+                    "en": "Simple interest with flexible early withdrawal; early access forfeits all earned interest."
+                },
                 "rateBpsPerCycle": 150,
-                "availableTermsCycles": [2, 4],
+                "availableTermsCycles": [
+                    2,
+                    4
+                ],
                 "interestMethod": "simple",
                 "allowEarlyWithdrawal": true,
                 "earlyWithdrawalPenaltyBps": 10000,
@@ -37,11 +44,18 @@
             {
                 "id": "term-certificate",
                 "name": "Certificado de Crescimento",
-                "nameTranslations": { "en": "Term Growth Certificate" },
+                "nameTranslations": {
+                    "en": "Term Growth Certificate"
+                },
                 "explanation": "Juros compostos e retorno estimado maior; o dinheiro fica bloqueado ate o vencimento.",
-                "explanationTranslations": { "en": "Compound interest for a higher estimated return; funds stay locked until maturity." },
+                "explanationTranslations": {
+                    "en": "Compound interest for a higher estimated return; funds stay locked until maturity."
+                },
                 "rateBpsPerCycle": 250,
-                "availableTermsCycles": [3, 6],
+                "availableTermsCycles": [
+                    3,
+                    6
+                ],
                 "interestMethod": "compound",
                 "allowEarlyWithdrawal": false,
                 "earlyWithdrawalPenaltyBps": 0,
