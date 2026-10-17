@@ -64,6 +64,21 @@ export class RoomsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @SubscribeMessage('game:bank-loan')
     bankLoan(@ConnectedSocket() socket: Socket, @MessageBody() input: unknown) { return this.gameAction(socket, 'game:bank-loan', input); }
 
+    @SubscribeMessage('game:emergency-fund-deposit')
+    emergencyFundDeposit(@ConnectedSocket() socket: Socket, @MessageBody() input: unknown) { return this.gameAction(socket, 'game:emergency-fund-deposit', input); }
+
+    @SubscribeMessage('game:emergency-fund-withdraw')
+    emergencyFundWithdraw(@ConnectedSocket() socket: Socket, @MessageBody() input: unknown) { return this.gameAction(socket, 'game:emergency-fund-withdraw', input); }
+
+    @SubscribeMessage('game:investment-create')
+    createInvestment(@ConnectedSocket() socket: Socket, @MessageBody() input: unknown) { return this.gameAction(socket, 'game:investment-create', input); }
+
+    @SubscribeMessage('game:investment-claim')
+    claimInvestment(@ConnectedSocket() socket: Socket, @MessageBody() input: unknown) { return this.gameAction(socket, 'game:investment-claim', input); }
+
+    @SubscribeMessage('game:investment-early-withdraw')
+    withdrawInvestmentEarly(@ConnectedSocket() socket: Socket, @MessageBody() input: unknown) { return this.gameAction(socket, 'game:investment-early-withdraw', input); }
+
     @SubscribeMessage('game:finish-turn')
     finishTurn(@ConnectedSocket() socket: Socket) { return this.gameAction(socket, 'game:finish-turn'); }
 

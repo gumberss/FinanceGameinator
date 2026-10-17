@@ -8,16 +8,21 @@ type PendingLoan = { id: string; status: string; lenderId: string; borrowerId: s
 type LoanTerms = { principal: number; interestRate: number; installmentsTotal: number; installmentAmount: number; totalRepayment: number };
 type PlayerOption = { id: string; name: string; balance: number };
 type Transaction = { id: string; description: string; amount: number };
+type EducationProduct = { id: string; name: string; nameTranslations?: Partial<Record<Locale, string>>; explanation: string; explanationTranslations?: Partial<Record<Locale, string>>; rateBpsPerCycle: number; availableTermsCycles: number[]; interestMethod: 'simple' | 'compound'; allowEarlyWithdrawal: boolean; earlyWithdrawalPenaltyBps: number; maturityBehavior: 'claimWithConfirmation'; maturityPayout: 'together' | 'separate' };
+type Investment = { id: string; productId: string; productName: string; productNameEnglish: string; principal: number; rateBpsPerCycle: number; interestMethod: 'simple' | 'compound'; termCycles: number; allowEarlyWithdrawal: boolean; earlyWithdrawalPenaltyBps: number; maturityBehavior: 'claimWithConfirmation'; maturityPayout: 'together' | 'separate'; creationCycle: number; maturityCycle: number; lastAccruedCycle: number; accruedInterest: number; estimatedMaturityAmount: number; maturityAmount: number | null; principalClaimed: boolean; interestClaimed: boolean; status: 'active' | 'matured' | 'claimed' | 'withdrawnEarly' };
+type InvestmentTerms = { principal: number; interestAmount: number; maturityAmount: number; rateBpsPerCycle: number; termCycles: number; interestMethod: 'simple' | 'compound' };
 type Action = (event: string, payload?: Record<string, unknown>) => void;
 type Translate = (key: TranslationKey, values?: Record<string, string | number>) => string;
 
 interface AccountTabProps {
+    view: 'account' | 'investments';
     locale: Locale;
     t: Translate;
     money: (amount: number) => string;
     balance: number;
     phase: string;
     activeLoans: Loan[];
+    investments: Investment[];
     transactions: Transaction[];
     payment: Payment | null;
     pendingLoan: PendingLoan | null;
@@ -27,6 +32,15 @@ interface AccountTabProps {
     canRequestLoan: boolean;
     loanAvailableThisCycle: boolean;
     maxActiveLoans: number;
+    boardId: string;
+    financialEducation: { emergencyFundInterestRateBpsPerCycle: number; fixedIncomeProducts: EducationProduct[] };
+    emergencyFundBalance: number;
+    emergencyFundInterestPrevious: number;
+    emergencyFundInterestTotal: number;
+    emergencyFundLastProcessedCycle: number;
+    currentCycle: number;
+    pendingObligations: number;
+    canCreateInvestment: boolean;
     maxInstallments: number;
     busy: boolean;
     loanAmount: string;
@@ -49,8 +63,18 @@ interface AccountTabProps {
 
 export function AccountTab(props: AccountTabProps) {
     const [confirmPayment, setConfirmPayment] = useState(false);
+    const [fundAmount, setFundAmount] = useState('10000');
+    const [fundAction, setFundAction] = useState<'deposit' | 'withdraw' | null>(null);
+    const [fundOperationId, setFundOperationId] = useState('');
+    const [investmentAmount, setInvestmentAmount] = useState('50000');
+    const [selectedProductId, setSelectedProductId] = useState(props.financialEducation.fixedIncomeProducts[0]?.id ?? '');
+    const [termCycles, setTermCycles] = useState('');
+    const [investmentTerms, setInvestmentTerms] = useState<InvestmentTerms | null>(null);
+    const [createInvestmentConfirmation, setCreateInvestmentConfirmation] = useState(false);
+    const [investmentOperationId, setInvestmentOperationId] = useState('');
+    const [investmentAction, setInvestmentAction] = useState<{ investmentId: string; kind: 'claim' | 'early'; part?: 'together' | 'principal' | 'interest' } | null>(null);
     const {
-        t, money, balance, phase, activeLoans, transactions, payment, pendingLoan, playerId, playerName,
+        view, t, money, balance, phase, activeLoans, investments, transactions, payment, pendingLoan, playerId, playerName,
         players, canRequestLoan, loanAvailableThisCycle, maxActiveLoans, maxInstallments, busy, loanAmount, onLoanAmount,
         installments, onInstallments, interestPercent, onInterestPercent, lenderId, onLenderId,
         bankTerms, requestTerms, offerPrincipal, onOfferPrincipal, offerInterest, onOfferInterest,
@@ -59,10 +83,64 @@ export function AccountTab(props: AccountTabProps) {
     const currentLender = lenderId || players.find(player => player.id !== playerId)?.id || '';
     const loanRequestValid = Number.isSafeInteger(Number(loanAmount)) && Number(loanAmount) > 0 && Number.isSafeInteger(Number(installments)) && Number(installments) > 0 && Number(installments) <= maxInstallments;
     const offerValid = Number.isSafeInteger(Number(offerPrincipal || pendingLoan?.requestedAmount)) && Number(offerPrincipal || pendingLoan?.requestedAmount) >= (pendingLoan?.requestedAmount ?? 1) && Number(offerPrincipal || pendingLoan?.requestedAmount) <= balance;
+    const selectedProduct = props.financialEducation.fixedIncomeProducts.find(product => product.id === selectedProductId);
+    const investmentRequestValid = Number.isSafeInteger(Number(investmentAmount)) && Number(investmentAmount) > 0 && Number.isSafeInteger(Number(termCycles)) && Number(termCycles) > 0;
+    const investedPrincipal = investments.reduce((sum, investment) => sum + (investment.status === 'active' || (investment.status === 'matured' && !investment.principalClaimed) ? investment.principal : 0), 0);
+    const productName = (product: EducationProduct) => product.nameTranslations?.[props.locale] ?? product.name;
+    const investmentName = (investment: Investment) => props.locale === 'en' ? investment.productNameEnglish : investment.productName;
+    const productExplanation = (product: EducationProduct) => product.explanationTranslations?.[props.locale] ?? product.explanation;
+    const earlyTerms = (investment: Investment) => {
+        const penaltyAmount = Math.round(investment.accruedInterest * investment.earlyWithdrawalPenaltyBps / 10000);
+        return { penaltyAmount, payoutAmount: investment.principal + investment.accruedInterest - penaltyAmount };
+    };
 
     useEffect(() => setConfirmPayment(false), [payment?.id]);
 
-    return <section className="asset-panel account-panel">
+    useEffect(() => {
+        if (!selectedProduct || !selectedProduct.availableTermsCycles.includes(Number(termCycles))) {
+            setTermCycles(selectedProduct?.availableTermsCycles[0]?.toString() ?? '');
+        }
+    }, [selectedProductId, props.financialEducation]);
+
+    useEffect(() => {
+        if (!selectedProduct || !investmentRequestValid || Number(investmentAmount) > balance) { setInvestmentTerms(null); return; }
+        const controller = new AbortController();
+        void fetch('/api/investment-terms', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ boardId: props.boardId, productId: selectedProduct.id, principal: Number(investmentAmount), termCycles: Number(termCycles) }),
+            signal: controller.signal,
+        }).then(async response => { if (!response.ok) throw new Error('terms'); return await response.json() as InvestmentTerms; })
+            .then(setInvestmentTerms)
+            .catch(() => { if (!controller.signal.aborted) setInvestmentTerms(null); });
+        return () => controller.abort();
+    }, [props.boardId, selectedProductId, investmentAmount, termCycles, balance, selectedProduct, investmentRequestValid]);
+
+    const beginFundAction = (action: 'deposit' | 'withdraw') => {
+        setFundOperationId(crypto.randomUUID());
+        setFundAction(action);
+    };
+
+    const confirmFundAction = () => {
+        if (!fundAction) return;
+        onAction(fundAction === 'deposit' ? 'game:emergency-fund-deposit' : 'game:emergency-fund-withdraw', { amount: Number(fundAmount), operationId: fundOperationId });
+        setFundAction(null);
+    };
+
+    const confirmCreateInvestment = () => {
+        if (!selectedProduct || !investmentTerms) return;
+        onAction('game:investment-create', { productId: selectedProduct.id, principal: Number(investmentAmount), termCycles: Number(termCycles), operationId: investmentOperationId });
+        setCreateInvestmentConfirmation(false);
+    };
+
+    const confirmInvestmentAction = () => {
+        if (!investmentAction) return;
+        if (investmentAction.kind === 'claim') onAction('game:investment-claim', { investmentId: investmentAction.investmentId, part: investmentAction.part ?? 'together' });
+        else onAction('game:investment-early-withdraw', { investmentId: investmentAction.investmentId });
+        setInvestmentAction(null);
+    };
+
+    return <section className={`asset-panel account-panel ${view === 'investments' ? 'investments-panel' : ''}`}>
+        {view === 'account' && <>
         <div className="asset-header"><span className="asset-icon"><Wallet size={24} /></span><div><div className="eyebrow">{t('account.balance')}</div><h2>{money(balance)}</h2></div></div>
         <p className="asset-description">{t('account.description')}</p>
 
@@ -82,5 +160,61 @@ export function AccountTab(props: AccountTabProps) {
         <section className="account-section"><div className="debt-heading"><h3>{t('loan.active')}</h3><span>{activeLoans.length}/{maxActiveLoans}</span></div>{activeLoans.length ? activeLoans.map(loan => <div className="loan-row" key={loan.id}><span>{loan.type === 'bank' ? t('loan.bank') : t('loan.fromPlayer', { player: players.find(player => player.id === loan.lenderId)?.name ?? '' })}<small>{loan.installmentsTotal - loan.installmentsRemaining}/{loan.installmentsTotal} · {money(loan.installmentAmount)} {t('loan.perInstallment')}</small></span><strong>{money(loan.outstanding)}</strong><button className="button secondary" disabled={busy || phase !== 'awaitingAction' || balance < loan.outstanding} onClick={() => onAction('game:repay-loan', { loanId: loan.id })}>{t('loan.payoff')}</button></div>) : <p className="empty-assets">{t('loan.noActive')}</p>}</section>
 
         <section className="account-section"><div className="debt-heading"><h3>{t('account.history')}</h3><span>{transactions.length}</span></div><div className="transaction-list">{transactions.slice(-8).reverse().map(transaction => <div className="transaction-row" key={transaction.id}><span>{transaction.description}</span><strong>{money(transaction.amount)}</strong></div>)}</div></section>
+
+        <section className="account-section emergency-fund-section">
+            <div className="debt-heading"><h3>{t('education.fundTitle')}</h3><strong>{money(props.emergencyFundBalance)}</strong></div>
+            <p>{t('education.fundIntro')}</p><p className="account-hint">{t('education.availableNow')}</p>
+            <div className="loan-preview"><span>{t('education.interestRate')}: {(props.financialEducation.emergencyFundInterestRateBpsPerCycle / 100).toFixed(2)}%</span><span>{t('education.previousInterest')}: {money(props.emergencyFundInterestPrevious)}</span><span>{t('education.totalInterest')}: {money(props.emergencyFundInterestTotal)}</span></div>
+            <p className="account-hint">{t('education.cycleRule')}</p>
+            {props.pendingObligations > 0 && <p className="account-hint">{t('education.pendingObligations', { amount: money(props.pendingObligations) })}</p>}
+            <label htmlFor="emergency-fund-amount">{t('education.fundAmount')}</label><input id="emergency-fund-amount" type="number" min="1" step="1" value={fundAmount} onChange={event => setFundAmount(event.target.value)} />
+            <div className="action-buttons"><button className="button secondary" disabled={busy || !Number.isSafeInteger(Number(fundAmount)) || Number(fundAmount) <= 0 || balance < Number(fundAmount)} onClick={() => beginFundAction('deposit')}>{t('education.deposit')}</button><button className="button secondary" disabled={busy || !Number.isSafeInteger(Number(fundAmount)) || Number(fundAmount) <= 0 || props.emergencyFundBalance < Number(fundAmount)} onClick={() => beginFundAction('withdraw')}>{t('education.withdraw')}</button></div>
+            {fundAction && <div className="payment-confirm"><p>{t(fundAction === 'deposit' ? 'education.confirmDeposit' : 'education.confirmWithdraw', { amount: money(Number(fundAmount)) })}</p><div className="action-buttons"><button className="button primary" disabled={busy} onClick={confirmFundAction}>{t('payment.confirm')}</button><button className="button secondary" disabled={busy} onClick={() => setFundAction(null)}>{t('leave.cancel')}</button></div></div>}
+        </section>
+        </>}
+
+        {view === 'investments' && <section className="investment-workspace">
+            <header className="investment-overview">
+                <div className="investment-intro"><div className="eyebrow">{t('education.investmentTitle')}</div><h2>{t('education.investmentIntro')}</h2><p>{t('education.liquidity')} {t('education.fictionalRates')}</p></div>
+                <div className="investment-summary"><div><span>{t('account.balance')}</span><strong>{money(balance)}</strong></div><div><span>{t('education.investedPrincipal')}</span><strong>{money(investedPrincipal)}</strong></div><div><span>{t('education.activeInvestmentCount', { count: investments.filter(investment => investment.status === 'active' || investment.status === 'matured').length })}</span><strong>{investments.filter(investment => investment.status === 'matured').length}</strong></div></div>
+            </header>
+            <section className="investment-catalog">
+                <div className="investment-catalog-heading"><div><div className="eyebrow">{t('education.productCatalog')}</div><p>{t('education.productCatalogHint')}</p></div></div>
+            <label htmlFor="fixed-income-product">{t('education.chooseProduct')}</label><select id="fixed-income-product" value={selectedProductId} onChange={event => setSelectedProductId(event.target.value)}>{props.financialEducation.fixedIncomeProducts.map(product => <option key={product.id} value={product.id}>{productName(product)}</option>)}</select>
+            {selectedProduct && <>
+                <p>{productExplanation(selectedProduct)}</p>
+                <div className="investment-product-stats"><div><span>{t('education.interestRate')}</span><strong>{(selectedProduct.rateBpsPerCycle / 100).toFixed(2)}%</strong></div><div><span>{t('education.interestMethod')}</span><strong>{t(selectedProduct.interestMethod === 'simple' ? 'education.simple' : 'education.compound')}</strong></div><div><span>{t('education.payoutMode')}</span><strong>{selectedProduct.maturityPayout === 'together' ? t('education.payoutTogether') : t('education.payoutSeparate')}</strong></div></div>
+                <p className="account-hint">{selectedProduct.allowEarlyWithdrawal ? t('education.earlyAllowed', { penalty: (selectedProduct.earlyWithdrawalPenaltyBps / 100).toFixed(2) }) : t('education.earlyLocked')} {t('education.earlyDefinition')}</p>
+                <label htmlFor="fixed-income-principal">{t('education.principal')}</label><input id="fixed-income-principal" type="number" min="1" step="1" value={investmentAmount} onChange={event => setInvestmentAmount(event.target.value)} />
+                <label htmlFor="fixed-income-term">{t('education.chooseTerm')}</label><select id="fixed-income-term" value={termCycles} onChange={event => setTermCycles(event.target.value)}>{selectedProduct.availableTermsCycles.map(term => <option key={term} value={term}>{t('education.termCycles', { count: term })}</option>)}</select>
+                <div className="investment-return"><div><span>{t('education.estimatedInterest')}</span><strong>{investmentTerms ? money(investmentTerms.interestAmount) : '...'}</strong></div><div><span>{t('education.estimatedMaturity')}</span><strong>{investmentTerms ? money(investmentTerms.maturityAmount) : '...'}</strong></div></div>
+                <p className="account-hint">{t('education.estimateNote')}</p>
+                <button className="button primary" disabled={busy || !props.canCreateInvestment || !investmentRequestValid || !investmentTerms || Number(investmentAmount) > balance} onClick={() => { setInvestmentOperationId(crypto.randomUUID()); setCreateInvestmentConfirmation(true); }}>{t('education.createInvestment')}</button>
+                {createInvestmentConfirmation && investmentTerms && <div className="payment-confirm"><p>{t('education.confirmInvestment', { principal: money(investmentTerms.principal), product: productName(selectedProduct), cycles: investmentTerms.termCycles, maturity: money(investmentTerms.maturityAmount) })}</p><div className="action-buttons"><button className="button primary" disabled={busy} onClick={confirmCreateInvestment}>{t('payment.confirm')}</button><button className="button secondary" disabled={busy} onClick={() => setCreateInvestmentConfirmation(false)}>{t('leave.cancel')}</button></div></div>}
+            </>}
+            </section>
+            <section className="investment-holdings">
+                <div className="investment-catalog-heading"><div><div className="eyebrow">{t('education.yourInvestments')}</div><p>{t('education.holdingsHint')}</p></div></div>
+            <div className="investment-list">{investments.length === 0 ? <p className="empty-assets">{t('education.noInvestments')}</p> : investments.map(investment => {
+                const expectedAmount = investment.maturityAmount ?? investment.estimatedMaturityAmount;
+                const penalty = earlyTerms(investment);
+                const statusKey = investment.status === 'active' ? 'education.statusActive' : investment.status === 'matured' ? 'education.statusMatured' : investment.status === 'claimed' ? 'education.statusClaimed' : 'education.statusEarly';
+                return <article className="investment-row" key={investment.id}>
+                    <div className="debt-heading"><strong>{investmentName(investment)}</strong><span>{t(statusKey)}</span></div>
+                    <div className="loan-preview"><span>{t('education.principal')}: {money(investment.principal)}</span><span>{(investment.rateBpsPerCycle / 100).toFixed(2)}% · {t(investment.interestMethod === 'simple' ? 'education.simple' : 'education.compound')}</span><span>{t('education.termCycles', { count: investment.termCycles })}</span><span>{t('education.createdAt', { cycle: investment.creationCycle })}</span><span>{t('education.maturityAt', { cycle: investment.maturityCycle })}</span><span>{t('education.estimatedInterest')}: {money(expectedAmount - investment.principal)}</span><strong>{t('education.estimatedMaturity')}: {money(expectedAmount)}</strong></div>
+                    {investment.status === 'active' && (investment.allowEarlyWithdrawal ? <button className="button secondary" disabled={busy} onClick={() => setInvestmentAction({ investmentId: investment.id, kind: 'early' })}>{t('education.earlyWithdrawal')}</button> : <p className="account-hint">{t('education.earlyLocked')}</p>)}
+                    {investment.status === 'matured' && (investment.maturityPayout === 'together' ? <button className="button primary" disabled={busy} onClick={() => setInvestmentAction({ investmentId: investment.id, kind: 'claim', part: 'together' })}>{t('education.claimMaturity', { amount: money(investment.maturityAmount ?? expectedAmount) })}</button> : <div className="action-buttons">{!investment.principalClaimed && <button className="button primary" disabled={busy} onClick={() => setInvestmentAction({ investmentId: investment.id, kind: 'claim', part: 'principal' })}>{t('education.claimPrincipal', { amount: money(investment.principal) })}</button>}{!investment.interestClaimed && <button className="button secondary" disabled={busy} onClick={() => setInvestmentAction({ investmentId: investment.id, kind: 'claim', part: 'interest' })}>{t('education.claimInterest', { amount: money(investment.accruedInterest) })}</button>}</div>)}
+                </article>;
+            })}</div>
+            {investmentAction && (() => {
+                const investment = investments.find(candidate => candidate.id === investmentAction.investmentId);
+                if (!investment) return null;
+                const penalty = earlyTerms(investment);
+                const amount = investmentAction.kind === 'early' ? penalty.payoutAmount : investmentAction.part === 'principal' ? investment.principal : investmentAction.part === 'interest' ? investment.accruedInterest : investment.maturityAmount ?? investment.estimatedMaturityAmount;
+                const prompt = investmentAction.kind === 'early' ? t('education.confirmEarly', { product: investmentName(investment), principal: money(investment.principal), interest: money(investment.accruedInterest), penalty: money(penalty.penaltyAmount), payout: money(amount) }) : t('education.confirmMaturity', { amount: money(amount) });
+                return <div className="payment-confirm"><p>{prompt}</p><div className="action-buttons"><button className="button primary" disabled={busy} onClick={confirmInvestmentAction}>{t('payment.confirm')}</button><button className="button secondary" disabled={busy} onClick={() => setInvestmentAction(null)}>{t('leave.cancel')}</button></div></div>;
+            })()}
+            </section>
+        </section>}
     </section>;
 }

@@ -1202,7 +1202,7 @@ input::placeholder {
 
 .game-board {
     display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 5px;
     background: #c5d4c1;
     padding: 5px;
@@ -1499,6 +1499,184 @@ input::placeholder {
     padding: 25px;
 }
 
+.investments-panel {
+    max-width: 1080px;
+}
+
+.investment-workspace {
+    display: grid;
+    gap: 22px;
+}
+
+.investment-overview {
+    display: grid;
+    grid-template-columns: minmax(0, 1.2fr) minmax(300px, 0.8fr);
+    align-items: center;
+    gap: 28px;
+    padding: 22px;
+    border: 1px solid #d9e4d5;
+    border-radius: 5px;
+    background: #eff5eb;
+}
+
+.investment-intro h2 {
+    max-width: 620px;
+    margin: 7px 0 10px;
+    color: #263a2e;
+    font-size: 21px;
+    line-height: 1.25;
+    font-weight: 600;
+}
+
+.investment-intro p,
+.investment-catalog-heading p {
+    max-width: 620px;
+    margin: 0;
+    color: #667468;
+    font-size: 12px;
+    line-height: 1.55;
+}
+
+.investment-summary {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px 20px;
+}
+
+.investment-summary>div {
+    display: grid;
+    gap: 5px;
+    padding-left: 11px;
+    border-left: 2px solid #88a27c;
+}
+
+.investment-summary span,
+.investment-product-stats span,
+.investment-return span {
+    color: #687569;
+    font-size: 10px;
+}
+
+.investment-summary strong {
+    color: #294333;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 17px;
+    font-weight: 600;
+}
+
+.investment-catalog,
+.investment-holdings {
+    display: grid;
+    gap: 14px;
+    padding-top: 18px;
+    border-top: 1px solid #dfe6dc;
+}
+
+.investment-catalog-heading {
+    display: flex;
+    align-items: end;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.investment-product-stats {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    border-top: 1px solid #e0e7dd;
+    border-bottom: 1px solid #e0e7dd;
+}
+
+.investment-product-stats>div {
+    display: grid;
+    gap: 6px;
+    padding: 13px 12px;
+}
+
+.investment-product-stats>div+div {
+    border-left: 1px solid #e0e7dd;
+}
+
+.investment-product-stats strong {
+    color: #2f5840;
+    font-size: 13px;
+}
+
+.investment-order {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(250px, 0.8fr);
+    align-items: end;
+    gap: 18px;
+}
+
+.investment-order-inputs {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.investment-order-inputs>div {
+    display: grid;
+    gap: 6px;
+}
+
+.investment-return {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+    padding: 12px;
+    border-left: 2px solid #88a27c;
+    background: #f2f6ee;
+}
+
+.investment-return>div {
+    display: grid;
+    gap: 5px;
+}
+
+.investment-return strong {
+    color: #294333;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 15px;
+}
+
+.investment-list {
+    display: grid;
+}
+
+.investment-row {
+    display: grid;
+    grid-template-columns: minmax(150px, 0.65fr) minmax(0, 1.8fr) auto;
+    align-items: center;
+    gap: 18px;
+    padding: 16px 0;
+    border-top: 1px solid #e4eae1;
+}
+
+.investment-row>.debt-heading {
+    display: grid;
+    justify-content: start;
+    gap: 7px;
+    border: 0;
+    padding: 0;
+}
+
+.investment-row>.debt-heading>span {
+    color: #667468;
+    font-size: 10px;
+}
+
+.investment-row>.loan-preview {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 7px 14px;
+    color: #536255;
+    font-size: 11px;
+}
+
+.investment-row>.loan-preview strong {
+    color: #294333;
+}
+
 .asset-header {
     display: flex;
     align-items: center;
@@ -1653,7 +1831,7 @@ input::placeholder {
     min-height: calc(69px + env(safe-area-inset-bottom));
     padding: 7px max(20px, calc((100vw - 560px) / 2)) calc(7px + env(safe-area-inset-bottom));
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 8px;
     border-top: 1px solid #d8e1d4;
     background: #f9fbf7f5;
@@ -1793,19 +1971,45 @@ input::placeholder {
     }
 
     .game-bottom-nav button {
-        grid-template-columns: 22px minmax(0, 1fr);
-        gap: 4px;
-        padding: 5px;
+        grid-template-columns: 1fr;
+        justify-items: center;
+        align-content: center;
+        gap: 2px;
+        padding: 4px 2px;
     }
 
     .game-bottom-nav button span {
-        font-size: 9px;
+        font-size: 8px;
     }
 
     .game-bottom-nav button strong {
-        grid-column: 2;
-        justify-self: start;
-        font-size: 8px;
+        display: none;
+    }
+
+    .game-bottom-nav button svg {
+        width: 18px;
+        height: 18px;
+    }
+}
+
+@media (max-width: 800px) {
+    .investment-overview,
+    .investment-order {
+        grid-template-columns: 1fr;
+    }
+
+    .investment-summary {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 10px;
+    }
+
+    .investment-summary strong {
+        font-size: 14px;
+    }
+
+    .investment-row {
+        grid-template-columns: 1fr;
+        gap: 12px;
     }
 }
 

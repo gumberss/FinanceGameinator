@@ -26,17 +26,30 @@ export interface LoanRules {
     maxInstallments: number;
 }
 
+export interface FixedIncomeProductDefinition {
+    id: string; name: string; nameTranslations?: Partial<Record<'en', string>>;
+    explanation: string; explanationTranslations?: Partial<Record<'en', string>>;
+    rateBpsPerCycle: number; availableTermsCycles: number[]; interestMethod: 'simple' | 'compound';
+    allowEarlyWithdrawal: boolean; earlyWithdrawalPenaltyBps: number; maturityBehavior: 'claimWithConfirmation'; maturityPayout: 'together' | 'separate';
+}
+
+export interface FinancialEducationRules {
+    emergencyFundInterestRateBpsPerCycle: number;
+    fixedIncomeProducts: FixedIncomeProductDefinition[];
+}
+
 export interface BoardDefinition {
     id: string; name: string; description: string; currency: string;
     startingBalance: number; startBonus: number; jailFee: number;
     bankInterestRate: number; spaces: BoardSpace[]; properties: PropertyDefinition[];
-    developmentRules: DevelopmentRules; loanRules: LoanRules; victoryCondition: 'lastSolventPlayer';
+    developmentRules: DevelopmentRules; loanRules: LoanRules; financialEducation: FinancialEducationRules; victoryCondition: 'lastSolventPlayer';
     bankruptcyRule: 'transferToCreditor';
 }
 
 export interface GamePlayer {
     id: string; name: string; color: string; position: number; balance: number;
     jailed: boolean; jailAttempts: number; currentJailFee: number; skipTurns: number; active: boolean; loanAvailableThisCycle: boolean;
+    emergencyFundBalance: number; emergencyFundInterestPrevious: number; emergencyFundInterestTotal: number; emergencyFundLastProcessedCycle: number;
 }
 
 export interface Loan {
@@ -62,22 +75,35 @@ export interface PropertyOffer {
     id: string; propertyId: string; buyerId: string; ownerId: string; amount: number;
 }
 
+export interface FixedIncomeInvestment {
+    id: string; investorId: string; productId: string; productName: string; productNameEnglish: string; principal: number;
+    rateBpsPerCycle: number; interestMethod: 'simple' | 'compound'; termCycles: number;
+    allowEarlyWithdrawal: boolean; earlyWithdrawalPenaltyBps: number; maturityBehavior: 'claimWithConfirmation'; maturityPayout: 'together' | 'separate';
+    creationCycle: number; maturityCycle: number; lastAccruedCycle: number; accruedInterest: number;
+    estimatedMaturityAmount: number; maturityAmount: number | null; principalClaimed: boolean; interestClaimed: boolean; status: 'active' | 'matured' | 'claimed' | 'withdrawnEarly';
+}
+
 export interface GameState {
     boardId: string; status: 'playing' | 'finished'; players: GamePlayer[];
     currentPlayerId: string; winnerId: string | null;
     phase: 'awaitingRoll' | 'awaitingAction' | 'awaitingDebtResolution' | 'awaitingLoanResponse' | 'awaitingPropertyResponse' | 'finished';
     propertyOwners: Record<string, string>; houses: Record<string, number>;
-    loans: Loan[]; pendingAction: PendingAction | null; pendingLoan: LoanProposal | null; pendingOffer: PropertyOffer | null;
+    loans: Loan[]; investments: FixedIncomeInvestment[]; pendingAction: PendingAction | null; pendingLoan: LoanProposal | null; pendingOffer: PropertyOffer | null;
     pendingPayments: PendingPayment[]; pendingLandingPosition: number | null; offersThisTurn: number; builtThisTurn: boolean; startCrossings: Record<string, number>;
     lastRoll: [number, number] | null; log: string[]; events: GameEvent[];
     transactions: FinancialTransaction[]; transactionKeys: string[];
 }
 
-export type GameEventType = 'gameStarted' | 'turn' | 'roll' | 'move' | 'purchase' | 'rent' | 'tax' | 'bonus' | 'holiday' | 'jail' | 'jailEscape' | 'bail' | 'loan' | 'build' | 'sale' | 'repayment' | 'paymentDue' | 'propertyOffer' | 'propertyTransfer' | 'bankruptcy' | 'victory' | 'pass';
+export type GameEventType = 'gameStarted' | 'turn' | 'roll' | 'move' | 'purchase' | 'rent' | 'tax' | 'bonus' | 'holiday' | 'jail' | 'jailEscape' | 'bail' | 'loan' | 'build' | 'sale' | 'repayment' | 'paymentDue' | 'propertyOffer' | 'propertyTransfer' | 'bankruptcy' | 'victory' | 'pass' | 'emergencyFundDeposit' | 'emergencyFundWithdrawal' | 'emergencyFundInterest' | 'investmentCreated' | 'investmentMatured' | 'investmentClaimed' | 'investmentEarlyWithdrawal';
 export interface GameEvent { id: string; sequence: number; type: GameEventType; playerId: string | null; message: string; details: Record<string, string | number | boolean | null>; }
-export interface FinancialTransaction { id: string; type: GameEventType; from: string | 'bank'; to: string | 'bank'; amount: number; description: string; }
+export interface FinancialTransaction { id: string; type: GameEventType; from: string | 'bank'; to: string | 'bank'; amount: number; description: string; details?: Record<string, string | number | boolean | null>; }
 
 export const TOKEN_COLORS = ['#e98570', '#547c9b', '#76955f', '#bb925b', '#9275a3', '#4caaa1', '#d16c94', '#5b6676'] as const;
+
+const defaultFixedIncomeProducts: FixedIncomeProductDefinition[] = [
+    { id: 'liquid-note', name: 'Nota de Rendimento Liquida', nameTranslations: { en: 'Liquid Income Note' }, explanation: 'Juros simples e resgate antecipado; o resgate antes do vencimento perde os juros acumulados.', explanationTranslations: { en: 'Simple interest with flexible early withdrawal; early access forfeits all earned interest.' }, rateBpsPerCycle: 150, availableTermsCycles: [2, 4], interestMethod: 'simple', allowEarlyWithdrawal: true, earlyWithdrawalPenaltyBps: 10000, maturityBehavior: 'claimWithConfirmation', maturityPayout: 'together' },
+    { id: 'term-certificate', name: 'Certificado de Crescimento', nameTranslations: { en: 'Term Growth Certificate' }, explanation: 'Juros compostos e retorno estimado maior; o dinheiro fica bloqueado ate o vencimento.', explanationTranslations: { en: 'Compound interest for a higher estimated return; funds stay locked until maturity.' }, rateBpsPerCycle: 250, availableTermsCycles: [3, 6], interestMethod: 'compound', allowEarlyWithdrawal: false, earlyWithdrawalPenaltyBps: 0, maturityBehavior: 'claimWithConfirmation', maturityPayout: 'together' },
+];
 
 export function validateBoard(input: unknown): BoardDefinition {
     if (!input || typeof input !== 'object' || Array.isArray(input)) throw new Error('Board must be a JSON object.');
@@ -136,6 +162,27 @@ export function validateBoard(input: unknown): BoardDefinition {
     if (!Number.isSafeInteger(maxActiveLoans) || (maxActiveLoans as number) < 1 || (maxActiveLoans as number) > 3) throw new Error('Active loans must be limited to a maximum of three.');
     if (!Number.isSafeInteger(maxInstallments) || (maxInstallments as number) < 1 || (maxInstallments as number) > 120) throw new Error('Maximum installments must be between 1 and 120.');
     const loanRules: LoanRules = { maxActiveLoans: maxActiveLoans as number, maxInstallments: maxInstallments as number };
+    const educationConfig = board.financialEducation && typeof board.financialEducation === 'object' ? board.financialEducation as Record<string, unknown> : {};
+    const emergencyFundInterestRateBpsPerCycle = educationConfig.emergencyFundInterestRateBpsPerCycle ?? 50;
+    if (!Number.isSafeInteger(emergencyFundInterestRateBpsPerCycle) || (emergencyFundInterestRateBpsPerCycle as number) < 0 || (emergencyFundInterestRateBpsPerCycle as number) > 10000) throw new Error('Emergency fund rate must be integer basis points between 0 and 10000.');
+    const productsInput = educationConfig.fixedIncomeProducts ?? defaultFixedIncomeProducts;
+    if (!Array.isArray(productsInput) || productsInput.length === 0) throw new Error('At least one fixed-income product is required.');
+    const productIds = new Set<string>();
+    const fixedIncomeProducts = (productsInput as unknown[]).map(value => {
+        if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error('Every fixed-income product must be an object.');
+        const product = value as Record<string, unknown>;
+        if (!isText(product.id) || !isText(product.name) || productIds.has(product.id)) throw new Error('Fixed-income product ids and names must be unique and nonempty.');
+        productIds.add(product.id);
+        if (!isText(product.explanation)) throw new Error(`Product ${product.id} needs an educational explanation.`);
+        if (!Number.isSafeInteger(product.rateBpsPerCycle) || (product.rateBpsPerCycle as number) < 0 || (product.rateBpsPerCycle as number) > 10000) throw new Error(`Product ${product.id} rate must be integer basis points between 0 and 10000.`);
+        if (!Array.isArray(product.availableTermsCycles) || product.availableTermsCycles.length === 0 || product.availableTermsCycles.some(term => !Number.isSafeInteger(term) || (term as number) < 1 || (term as number) > 120) || new Set(product.availableTermsCycles).size !== product.availableTermsCycles.length) throw new Error(`Product ${product.id} needs unique terms between 1 and 120 cycles.`);
+        if (product.interestMethod !== 'simple' && product.interestMethod !== 'compound') throw new Error(`Product ${product.id} has an unsupported interest method.`);
+        if (typeof product.allowEarlyWithdrawal !== 'boolean') throw new Error(`Product ${product.id} must define early-withdrawal availability.`);
+        if (!Number.isSafeInteger(product.earlyWithdrawalPenaltyBps) || (product.earlyWithdrawalPenaltyBps as number) < 0 || (product.earlyWithdrawalPenaltyBps as number) > 10000) throw new Error(`Product ${product.id} penalty must be integer basis points between 0 and 10000.`);
+        if (product.maturityBehavior !== 'claimWithConfirmation' || !['together', 'separate'].includes(String(product.maturityPayout))) throw new Error(`Product ${product.id} must define a supported confirmed maturity payout.`);
+        return product as unknown as FixedIncomeProductDefinition;
+    });
+    const financialEducation: FinancialEducationRules = { emergencyFundInterestRateBpsPerCycle: emergencyFundInterestRateBpsPerCycle as number, fixedIncomeProducts };
     if (board.victoryCondition !== undefined && board.victoryCondition !== 'lastSolventPlayer') throw new Error('Unsupported victory condition.');
     if (board.bankruptcyRule !== undefined && board.bankruptcyRule !== 'transferToCreditor') throw new Error('Unsupported bankruptcy rule.');
     const normalizedProperties = (board.properties as Record<string, unknown>[]).map(property => ({
@@ -145,7 +192,7 @@ export function validateBoard(input: unknown): BoardDefinition {
             : developmentRules.rentMultipliers.map(multiplier => Math.round((property.rent as number) * multiplier)),
     }));
     if (normalizedProperties.some(property => !Array.isArray(property.rentSchedule) || property.rentSchedule.length !== developmentRules.rentMultipliers.length || property.rentSchedule.some(value => !isAmount(value)))) throw new Error('Each property rentSchedule must define base, each house level, and hotel rent as nonnegative integers.');
-    return { ...board, properties: normalizedProperties, developmentRules, loanRules, victoryCondition: 'lastSolventPlayer', bankruptcyRule: 'transferToCreditor' } as unknown as BoardDefinition;
+    return { ...board, properties: normalizedProperties, developmentRules, loanRules, financialEducation, victoryCondition: 'lastSolventPlayer', bankruptcyRule: 'transferToCreditor' } as unknown as BoardDefinition;
 }
 
 export function startGame(board: BoardDefinition, players: { id: string; name: string; online: boolean; color: string }[]): GameState {
@@ -157,8 +204,8 @@ export function startGame(board: BoardDefinition, players: { id: string; name: s
     }
     const start = board.spaces.findIndex(space => space.type === 'start');
     const state: GameState = {
-        boardId: board.id, status: 'playing', players: players.map(player => ({ id: player.id, name: player.name, color: player.color, position: start, balance: board.startingBalance, jailed: false, jailAttempts: 0, currentJailFee: board.jailFee, skipTurns: 0, active: true, loanAvailableThisCycle: true })),
-        currentPlayerId: players[0].id, winnerId: null, phase: 'awaitingRoll', propertyOwners: {}, houses: {}, loans: [], pendingAction: null, pendingLoan: null, pendingOffer: null, pendingPayments: [], pendingLandingPosition: null, offersThisTurn: 0, builtThisTurn: false, startCrossings: {}, lastRoll: null, log: [], events: [], transactions: [], transactionKeys: [],
+        boardId: board.id, status: 'playing', players: players.map(player => ({ id: player.id, name: player.name, color: player.color, position: start, balance: board.startingBalance, jailed: false, jailAttempts: 0, currentJailFee: board.jailFee, skipTurns: 0, active: true, loanAvailableThisCycle: true, emergencyFundBalance: 0, emergencyFundInterestPrevious: 0, emergencyFundInterestTotal: 0, emergencyFundLastProcessedCycle: 0 })),
+        currentPlayerId: players[0].id, winnerId: null, phase: 'awaitingRoll', propertyOwners: {}, houses: {}, loans: [], investments: [], pendingAction: null, pendingLoan: null, pendingOffer: null, pendingPayments: [], pendingLandingPosition: null, offersThisTurn: 0, builtThisTurn: false, startCrossings: {}, lastRoll: null, log: [], events: [], transactions: [], transactionKeys: [],
     };
     recordEvent(state, 'gameStarted', players[0].id, `${players[0].name} inicia uma partida em ${board.name}.`, { boardId: board.id, playerCount: players.length });
     recordEvent(state, 'turn', players[0].id, `A vez de ${players[0].name}.`);
@@ -170,7 +217,7 @@ function recordEvent(state: GameState, type: GameEventType, playerId: string | n
     state.log.push(message);
 }
 
-export function applyTransaction(state: GameState, type: GameEventType, from: string | 'bank', to: string | 'bank', amount: number, description: string, idempotencyKey: string = randomUUID()) {
+export function applyTransaction(state: GameState, type: GameEventType, from: string | 'bank', to: string | 'bank', amount: number, description: string, idempotencyKey: string = randomUUID(), details: Record<string, string | number | boolean> = {}) {
     if (state.status !== 'playing') throw new Error('A partida terminou.');
     if (!Number.isSafeInteger(amount) || amount < 0) throw new Error('O valor da transacao deve ser um inteiro nao negativo.');
     if (state.transactionKeys.includes(idempotencyKey)) return false;
@@ -183,9 +230,168 @@ export function applyTransaction(state: GameState, type: GameEventType, from: st
     if (payer) payer.balance -= amount;
     if (recipient) recipient.balance += amount;
     state.transactionKeys.push(idempotencyKey);
-    state.transactions.push({ id: idempotencyKey, type, from, to, amount, description });
-    recordEvent(state, type, payer?.id ?? recipient?.id ?? null, description, { from, to, amount, transactionId: idempotencyKey });
+    state.transactions.push({ id: idempotencyKey, type, from, to, amount, description, details });
+    recordEvent(state, type, payer?.id ?? recipient?.id ?? null, description, { ...details, from, to, amount, transactionId: idempotencyKey });
     return true;
+}
+
+function recordAccountTransaction(state: GameState, type: GameEventType, playerId: string, amount: number, description: string, idempotencyKey: string, details: GameEvent['details'] = {}) {
+    if (state.status !== 'playing') throw new Error('A partida terminou.');
+    if (!Number.isSafeInteger(amount) || amount < 0) throw new Error('O valor da transacao deve ser um inteiro nao negativo.');
+    if (state.transactionKeys.includes(idempotencyKey)) return false;
+    if (!state.players.some(player => player.id === playerId && player.active)) throw new Error('Jogador da transacao invalido.');
+    state.transactionKeys.push(idempotencyKey);
+    state.transactions.push({ id: idempotencyKey, type, from: 'bank', to: playerId, amount, description, details });
+    recordEvent(state, type, playerId, description, { ...details, amount, transactionId: idempotencyKey });
+    return true;
+}
+
+function roundedBasisPointAmount(amount: number, rateBps: number) {
+    if (!Number.isSafeInteger(amount) || amount < 0 || !Number.isSafeInteger(rateBps) || rateBps < 0 || rateBps > 10000) throw new Error('Valor ou taxa financeira invalida.');
+    const rounded = (BigInt(amount) * BigInt(rateBps) + 5000n) / 10000n;
+    if (rounded > BigInt(Number.MAX_SAFE_INTEGER)) throw new Error('Valor financeiro fora do limite permitido.');
+    return Number(rounded);
+}
+
+function addSafeMoney(left: number, right: number) {
+    const total = left + right;
+    if (!Number.isSafeInteger(total) || total < 0) throw new Error('Saldo resultante fora do limite permitido.');
+    return total;
+}
+
+function productTerms(product: FixedIncomeProductDefinition, principal: number, termCycles: number) {
+    if (!Number.isSafeInteger(principal) || principal <= 0 || !product.availableTermsCycles.includes(termCycles)) throw new Error('Valor ou prazo de investimento invalido.');
+    let accruedInterest = 0;
+    for (let cycle = 0; cycle < termCycles; cycle++) {
+        const interestBase = product.interestMethod === 'simple' ? principal : addSafeMoney(principal, accruedInterest);
+        accruedInterest = addSafeMoney(accruedInterest, roundedBasisPointAmount(interestBase, product.rateBpsPerCycle));
+    }
+    return { principal, interestAmount: accruedInterest, maturityAmount: addSafeMoney(principal, accruedInterest) };
+}
+
+export function calculateFixedIncomeTerms(product: FixedIncomeProductDefinition, principal: number, termCycles: number) {
+    return { ...productTerms(product, principal, termCycles), rateBpsPerCycle: product.rateBpsPerCycle, termCycles, interestMethod: product.interestMethod };
+}
+
+export function calculateEarlyWithdrawalTerms(investment: FixedIncomeInvestment) {
+    if (!investment.allowEarlyWithdrawal || investment.status !== 'active') throw new Error('Este investimento nao permite resgate antecipado.');
+    const penaltyAmount = roundedBasisPointAmount(investment.accruedInterest, investment.earlyWithdrawalPenaltyBps);
+    const netInterest = investment.accruedInterest - penaltyAmount;
+    return { principal: investment.principal, accruedInterest: investment.accruedInterest, penaltyAmount, payoutAmount: addSafeMoney(investment.principal, netInterest) };
+}
+
+function requireActivePlayer(state: GameState, playerId: string) {
+    const player = state.players.find(candidate => candidate.id === playerId && candidate.active);
+    if (state.status !== 'playing' || !player) throw new Error('Jogador indisponivel para esta operacao.');
+    return player;
+}
+
+export function depositEmergencyFund(state: GameState, playerId: string, amount: number, operationId: string) {
+    const player = requireActivePlayer(state, playerId);
+    if (!Number.isSafeInteger(amount) || amount <= 0 || typeof operationId !== 'string' || operationId.length < 1 || operationId.length > 100) throw new Error('Informe um valor de deposito valido.');
+    if (player.balance < amount) throw new Error('Saldo insuficiente para depositar no fundo de emergencia.');
+    const nextFundBalance = addSafeMoney(player.emergencyFundBalance, amount);
+    const key = `emergency-fund:deposit:${playerId}:${operationId}`;
+    if (!applyTransaction(state, 'emergencyFundDeposit', playerId, 'bank', amount, `${player.name} deposita ${amount} no fundo de emergencia.`, key)) return state;
+    player.emergencyFundBalance = nextFundBalance;
+    return state;
+}
+
+export function withdrawEmergencyFund(state: GameState, playerId: string, amount: number, operationId: string) {
+    const player = requireActivePlayer(state, playerId);
+    if (!Number.isSafeInteger(amount) || amount <= 0 || typeof operationId !== 'string' || operationId.length < 1 || operationId.length > 100) throw new Error('Informe um valor de resgate valido.');
+    if (player.emergencyFundBalance < amount) throw new Error('Saldo insuficiente no fundo de emergencia.');
+    const nextBalance = addSafeMoney(player.balance, amount);
+    const key = `emergency-fund:withdrawal:${playerId}:${operationId}`;
+    if (!applyTransaction(state, 'emergencyFundWithdrawal', 'bank', playerId, amount, `${player.name} resgata ${amount} do fundo de emergencia.`, key)) return state;
+    player.emergencyFundBalance -= amount;
+    if (player.balance !== nextBalance) throw new Error('Saldo de conta inconsistente apos o resgate.');
+    return state;
+}
+
+function getInvestment(state: GameState, playerId: string, investmentId: string) {
+    const investment = state.investments.find(candidate => candidate.id === investmentId && candidate.investorId === playerId);
+    if (!investment) throw new Error('Investimento nao encontrado para este jogador.');
+    return investment;
+}
+
+export function createFixedIncomeInvestment(state: GameState, board: BoardDefinition, playerId: string, productId: string, principal: number, termCycles: number, operationId: string) {
+    const player = requireActivePlayer(state, playerId);
+    if (state.currentPlayerId !== playerId || state.phase !== 'awaitingAction' || state.pendingAction || state.pendingLoan || state.pendingOffer) throw new Error('Invista durante sua vez, apos resolver as acoes pendentes.');
+    if (typeof operationId !== 'string' || operationId.length < 1 || operationId.length > 100) throw new Error('Identificador de operacao invalido.');
+    const key = `investment:create:${playerId}:${operationId}`;
+    if (state.transactionKeys.includes(key)) return state;
+    const product = board.financialEducation.fixedIncomeProducts.find(candidate => candidate.id === productId);
+    if (!product) throw new Error('Produto de renda fixa desconhecido.');
+    const terms = productTerms(product, principal, termCycles);
+    if (player.balance < principal) throw new Error('Saldo insuficiente para este investimento.');
+    const cycle = state.startCrossings[playerId] ?? 0;
+    const maturityCycle = cycle + termCycles;
+    if (!Number.isSafeInteger(maturityCycle)) throw new Error('Ciclo de vencimento fora do limite permitido.');
+    const investment: FixedIncomeInvestment = {
+        id: randomUUID(), investorId: playerId, productId: product.id, productName: product.name, productNameEnglish: product.nameTranslations?.en ?? product.name, principal,
+        rateBpsPerCycle: product.rateBpsPerCycle, interestMethod: product.interestMethod, termCycles,
+        allowEarlyWithdrawal: product.allowEarlyWithdrawal, earlyWithdrawalPenaltyBps: product.earlyWithdrawalPenaltyBps,
+        maturityBehavior: product.maturityBehavior, maturityPayout: product.maturityPayout,
+        creationCycle: cycle, maturityCycle, lastAccruedCycle: cycle, accruedInterest: 0,
+        estimatedMaturityAmount: terms.maturityAmount, maturityAmount: null, principalClaimed: false, interestClaimed: false, status: 'active',
+    };
+    if (!applyTransaction(state, 'investmentCreated', playerId, 'bank', principal, `${player.name} investe ${principal} em ${product.name} por ${termCycles} ciclo(s).`, key, { investmentId: investment.id, productId, productName: product.name, productNameEnglish: investment.productNameEnglish, termCycles, rateBpsPerCycle: product.rateBpsPerCycle, estimatedMaturityAmount: terms.maturityAmount })) return state;
+    state.investments.push(investment);
+    return state;
+}
+
+export function claimFixedIncomeInvestment(state: GameState, playerId: string, investmentId: string, part: 'together' | 'principal' | 'interest' = 'together') {
+    const player = requireActivePlayer(state, playerId);
+    const investment = getInvestment(state, playerId, investmentId);
+    if (investment.status !== 'matured') throw new Error('O investimento ainda nao venceu ou ja foi resgatado.');
+    const separate = investment.maturityPayout === 'separate';
+    if ((!separate && part !== 'together') || (separate && part === 'together')) throw new Error('Escolha uma parte valida para este resgate.');
+    const amount = part === 'principal' ? investment.principal : part === 'interest' ? investment.accruedInterest : investment.maturityAmount ?? addSafeMoney(investment.principal, investment.accruedInterest);
+    const key = `investment:claim:${investment.id}:${part}`;
+    if (state.transactionKeys.includes(key)) return state;
+    if (!applyTransaction(state, 'investmentClaimed', 'bank', playerId, amount, `${player.name} resgata ${amount} do investimento ${investment.productName}.`, key, { investmentId, productName: investment.productName, productNameEnglish: investment.productNameEnglish, part, principal: investment.principal, accruedInterest: investment.accruedInterest })) return state;
+    if (part === 'principal' || part === 'together') investment.principalClaimed = true;
+    if (part === 'interest' || part === 'together') investment.interestClaimed = true;
+    if (investment.principalClaimed && investment.interestClaimed) investment.status = 'claimed';
+    return state;
+}
+
+export function withdrawFixedIncomeEarly(state: GameState, playerId: string, investmentId: string) {
+    const player = requireActivePlayer(state, playerId);
+    const investment = getInvestment(state, playerId, investmentId);
+    const terms = calculateEarlyWithdrawalTerms(investment);
+    const key = `investment:early-withdrawal:${investment.id}`;
+    if (state.transactionKeys.includes(key)) return state;
+    if (!applyTransaction(state, 'investmentEarlyWithdrawal', 'bank', playerId, terms.payoutAmount, `${player.name} resgata ${terms.payoutAmount} antecipadamente de ${investment.productName}; perde ${terms.penaltyAmount} em juros.`, key, { investmentId, productName: investment.productName, productNameEnglish: investment.productNameEnglish, principal: terms.principal, accruedInterest: terms.accruedInterest, penaltyAmount: terms.penaltyAmount })) return state;
+    investment.status = 'withdrawnEarly';
+    return state;
+}
+
+function processFinancialCycle(state: GameState, board: BoardDefinition, player: GamePlayer, cycle: number) {
+    if (cycle > player.emergencyFundLastProcessedCycle) {
+        const interest = roundedBasisPointAmount(player.emergencyFundBalance, board.financialEducation.emergencyFundInterestRateBpsPerCycle);
+        if (interest > 0) {
+            const key = `emergency-fund:interest:${player.id}:${cycle}`;
+            if (recordAccountTransaction(state, 'emergencyFundInterest', player.id, interest, `${player.name} recebe ${interest} de juros no fundo de emergencia no ciclo ${cycle}.`, key, { cycle, rateBpsPerCycle: board.financialEducation.emergencyFundInterestRateBpsPerCycle })) {
+                player.emergencyFundBalance = addSafeMoney(player.emergencyFundBalance, interest);
+                player.emergencyFundInterestTotal = addSafeMoney(player.emergencyFundInterestTotal, interest);
+            }
+        }
+        player.emergencyFundInterestPrevious = interest;
+        player.emergencyFundLastProcessedCycle = cycle;
+    }
+    for (const investment of state.investments) {
+        if (investment.investorId !== player.id || investment.status !== 'active' || cycle <= investment.creationCycle || cycle <= investment.lastAccruedCycle) continue;
+        const base = investment.interestMethod === 'simple' ? investment.principal : addSafeMoney(investment.principal, investment.accruedInterest);
+        investment.accruedInterest = addSafeMoney(investment.accruedInterest, roundedBasisPointAmount(base, investment.rateBpsPerCycle));
+        investment.lastAccruedCycle = cycle;
+        if (cycle >= investment.maturityCycle) {
+            investment.maturityAmount = addSafeMoney(investment.principal, investment.accruedInterest);
+            investment.status = 'matured';
+            recordEvent(state, 'investmentMatured', player.id, `${player.name}: ${investment.productName} venceu; ${investment.maturityAmount} aguardam confirmacao de resgate.`, { investmentId: investment.id, productName: investment.productNameEnglish, maturityCycle: cycle, principal: investment.principal, accruedInterest: investment.accruedInterest, maturityAmount: investment.maturityAmount });
+        }
+    }
 }
 
 export function calculateLoanTerms(principal: number, interestRate: number, installments: number) {
@@ -376,6 +582,7 @@ export function roll(state: GameState, board: BoardDefinition, actorId: string, 
         const dueByLoan = state.loans.filter(loan => loan.borrowerId === player.id && loan.installmentsRemaining > 0).map(loan => ({ loan, remaining: loan.outstanding, installments: loan.installmentsRemaining }));
         for (let crossing = 1; crossing <= crossings; crossing++) {
             const crossingId = crossingCount + crossing;
+            processFinancialCycle(state, board, player, crossingId);
             for (const due of dueByLoan) {
                 if (due.installments <= 0 || due.remaining <= 0) continue;
                 const amount = due.installments === 1 ? due.remaining : Math.min(due.loan.installmentAmount, due.remaining);

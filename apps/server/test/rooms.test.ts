@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { DatabaseSync } from 'node:sqlite';
 import { io, Socket } from 'socket.io-client';
 import { createApplication } from '../src/app';
 import { BoardsService } from '../src/boards.service';
@@ -33,6 +34,9 @@ test('real HTTP + sockets: passwords, presence, authorization, reconnect, start 
         assert.match(owner.room.code, /^[A-Z2-9]{6}$/);
         assert.equal(owner.room.players[0].color, '#e98570');
         assert.ok((await (await fetch(`${url}/api/boards`)).json() as unknown[]).length > 0);
+        const investmentTerms = await (await post('investment-terms', { boardId: 'classic', productId: 'liquid-note', principal: 100000, termCycles: 2 })).json() as { interestAmount: number; maturityAmount: number; rateBpsPerCycle: number };
+        assert.deepEqual(investmentTerms, { principal: 100000, interestAmount: 3000, maturityAmount: 103000, rateBpsPerCycle: 150, termCycles: 2, interestMethod: 'simple' });
+        assert.equal((await post('investment-terms', { boardId: 'classic', productId: 'liquid-note', principal: 100000, termCycles: 3 })).status, 400);
         assert.equal(JSON.stringify(owner.room).includes('password'), false);
         assert.equal((await post('rooms/join', { name: 'Guest', password: 'wrong', code: owner.room.code })).status, 403);
         assert.equal((await post('rooms/join', { name: 'Guest', password: 'safe-pass', code: 'AAAAAA' })).status, 404);
@@ -132,5 +136,76 @@ test('SQLite restores the selected board, game snapshot, player colors, and bala
         assert.deepEqual(room.game?.players.map(player => player.balance), before.game?.players.map(player => player.balance));
         assert.deepEqual(room.players.map(player => player.online), [false, false]);
         assert.notEqual(room.players[0].color, room.players[1].color);
+    } finally { restored.onModuleDestroy(); rmSync(directory, { recursive: true }); }
+});
+
+test('SQLite restores emergency-fund balances and active fixed-income investments', () => {
+    const directory = mkdtempSync(join(tmpdir(), 'finance-gameinator-education-'));
+    const path = join(directory, 'rooms.sqlite');
+    const original = new RoomsService(path, new BoardsService());
+    const owner = original.create({ name: 'Owner', password: 'safe-pass' });
+    const guest = original.join({ name: 'Guest', password: 'safe-pass', code: owner.room.code });
+    original.connect({ code: owner.room.code, playerId: owner.playerId }, 'owner-socket');
+    original.connect({ code: owner.room.code, playerId: guest.playerId }, 'guest-socket');
+    original.start({ code: owner.room.code, playerId: owner.playerId }, 'classic');
+    original.gameAction({ code: owner.room.code, playerId: owner.playerId }, 'game:emergency-fund-deposit', { amount: 10000, operationId: 'persist-fund' });
+
+    const database = (original as unknown as { db: DatabaseSync }).db;
+    const row = database.prepare('SELECT game_json FROM rooms WHERE code = ?').get(owner.room.code) as { game_json: string };
+    const game = JSON.parse(row.game_json) as Record<string, unknown>;
+    game.phase = 'awaitingAction';
+    database.prepare('UPDATE rooms SET game_json = ? WHERE code = ?').run(JSON.stringify(game), owner.room.code);
+    const invested = original.gameAction({ code: owner.room.code, playerId: owner.playerId }, 'game:investment-create', { productId: 'liquid-note', principal: 50000, termCycles: 2, operationId: 'persist-investment' });
+    original.onModuleDestroy();
+
+    const restored = new RoomsService(path, new BoardsService());
+    try {
+        const snapshot = restored.view(owner.room.code).game!;
+        assert.equal(snapshot.players[0].emergencyFundBalance, 10000);
+        assert.equal(snapshot.players[0].emergencyFundInterestTotal, 0);
+        assert.equal(snapshot.players[0].balance, 240000);
+        assert.equal(snapshot.investments.length, 1);
+        assert.equal(snapshot.investments[0].principal, 50000);
+        assert.equal(snapshot.investments[0].estimatedMaturityAmount, 51500);
+        assert.equal(snapshot.investments[0].status, 'active');
+        assert.equal(invested.game?.investments[0].id, snapshot.investments[0].id);
+        assert.deepEqual(snapshot.transactions.map(transaction => transaction.type), ['emergencyFundDeposit', 'investmentCreated']);
+    } finally { restored.onModuleDestroy(); rmSync(directory, { recursive: true }); }
+});
+
+test('legacy snapshots migrate empty education accounts without retroactive cycle interest', () => {
+    const directory = mkdtempSync(join(tmpdir(), 'finance-gameinator-legacy-education-'));
+    const path = join(directory, 'rooms.sqlite');
+    const original = new RoomsService(path, new BoardsService());
+    const owner = original.create({ name: 'Owner', password: 'safe-pass' });
+    const guest = original.join({ name: 'Guest', password: 'safe-pass', code: owner.room.code });
+    original.connect({ code: owner.room.code, playerId: owner.playerId }, 'owner-socket');
+    original.connect({ code: owner.room.code, playerId: guest.playerId }, 'guest-socket');
+    original.start({ code: owner.room.code, playerId: owner.playerId }, 'classic');
+    const database = (original as unknown as { db: DatabaseSync }).db;
+    const row = database.prepare('SELECT game_json FROM rooms WHERE code = ?').get(owner.room.code) as { game_json: string };
+    const legacy = JSON.parse(row.game_json) as any;
+    for (const player of legacy.players) {
+        delete player.emergencyFundBalance;
+        delete player.emergencyFundInterestPrevious;
+        delete player.emergencyFundInterestTotal;
+        delete player.emergencyFundLastProcessedCycle;
+    }
+    delete legacy.investments;
+    delete legacy.startCrossings;
+    database.prepare('UPDATE rooms SET game_json = ? WHERE code = ?').run(JSON.stringify(legacy), owner.room.code);
+    original.onModuleDestroy();
+
+    const restored = new RoomsService(path, new BoardsService());
+    try {
+        const game = restored.view(owner.room.code).game!;
+        const ownerState = game.players.find(player => player.id === owner.playerId)!;
+        assert.equal(ownerState.emergencyFundBalance, 0);
+        assert.equal(ownerState.emergencyFundInterestPrevious, 0);
+        assert.equal(ownerState.emergencyFundInterestTotal, 0);
+        assert.equal(ownerState.emergencyFundLastProcessedCycle, 0);
+        assert.deepEqual(game.investments, []);
+        assert.deepEqual(game.startCrossings, {});
+        assert.equal(guest.room.code, owner.room.code);
     } finally { restored.onModuleDestroy(); rmSync(directory, { recursive: true }); }
 });

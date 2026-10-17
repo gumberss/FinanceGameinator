@@ -4,7 +4,7 @@ import { mkdirSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
 import { BoardsService } from './boards.service';
-import { acceptPlayerLoan, buildProperty, buyProperty, cancelPlayerLoanRequest, declareBankruptcy, declineBail, finishTurn, GameState, payBail, repayLoan, requestPlayerLoan, respondPlayerLoan, respondPropertyOffer, resolveRent, roll, sellBuilding, sellProperty, sendPropertyOffer, startGame, takeBankLoan, TOKEN_COLORS } from './game-engine';
+import { acceptPlayerLoan, buildProperty, buyProperty, cancelPlayerLoanRequest, claimFixedIncomeInvestment, createFixedIncomeInvestment, declareBankruptcy, declineBail, depositEmergencyFund, finishTurn, GameState, payBail, repayLoan, requestPlayerLoan, respondPlayerLoan, respondPropertyOffer, resolveRent, roll, sellBuilding, sellProperty, sendPropertyOffer, startGame, takeBankLoan, TOKEN_COLORS, withdrawEmergencyFund, withdrawFixedIncomeEarly } from './game-engine';
 
 export interface RoomView {
     code: string;
@@ -90,6 +90,10 @@ export class RoomsService implements OnModuleDestroy {
             if (player.jailAttempts === undefined) { player.jailAttempts = 0; changed = true; }
             if (player.skipTurns === undefined) { player.skipTurns = 0; changed = true; }
             if (player.loanAvailableThisCycle === undefined) { player.loanAvailableThisCycle = true; changed = true; }
+            if (!Number.isSafeInteger(player.emergencyFundBalance)) { player.emergencyFundBalance = 0; changed = true; }
+            if (!Number.isSafeInteger(player.emergencyFundInterestPrevious)) { player.emergencyFundInterestPrevious = 0; changed = true; }
+            if (!Number.isSafeInteger(player.emergencyFundInterestTotal)) { player.emergencyFundInterestTotal = 0; changed = true; }
+            if (!Number.isSafeInteger(player.emergencyFundLastProcessedCycle)) { player.emergencyFundLastProcessedCycle = Number.isSafeInteger(game.startCrossings?.[player.id]) ? game.startCrossings[player.id] : 0; changed = true; }
         }
         if (game.winnerId === undefined) { game.winnerId = null; changed = true; }
         if (!Array.isArray(game.events)) {
@@ -100,6 +104,7 @@ export class RoomsService implements OnModuleDestroy {
         if (!Array.isArray(game.transactionKeys)) { game.transactionKeys = game.transactions.map(transaction => transaction.id); changed = true; }
         if (game.pendingOffer === undefined) { game.pendingOffer = null; changed = true; }
         if (!Array.isArray(game.pendingPayments)) { game.pendingPayments = []; changed = true; }
+        if (!Array.isArray(game.investments)) { game.investments = []; changed = true; }
         if (game.pendingLandingPosition === undefined) { game.pendingLandingPosition = null; changed = true; }
         if (!Number.isSafeInteger(game.offersThisTurn)) { game.offersThisTurn = 0; changed = true; }
         if (game.builtThisTurn === undefined) { game.builtThisTurn = false; changed = true; }
@@ -234,6 +239,11 @@ export class RoomsService implements OnModuleDestroy {
             case 'game:pay': resolveRent(game, board, identity.playerId, payload.paymentId as string | undefined); break;
             case 'game:bail': payload.accept === true ? payBail(game, board, identity.playerId) : declineBail(game, board, identity.playerId); break;
             case 'game:bank-loan': takeBankLoan(game, board, identity.playerId, payload.amount as number | undefined, typeof payload.installments === 'number' ? payload.installments : 1); break;
+            case 'game:emergency-fund-deposit': depositEmergencyFund(game, identity.playerId, payload.amount as number, payload.operationId as string); break;
+            case 'game:emergency-fund-withdraw': withdrawEmergencyFund(game, identity.playerId, payload.amount as number, payload.operationId as string); break;
+            case 'game:investment-create': createFixedIncomeInvestment(game, board, identity.playerId, payload.productId as string, payload.principal as number, payload.termCycles as number, payload.operationId as string); break;
+            case 'game:investment-claim': claimFixedIncomeInvestment(game, identity.playerId, payload.investmentId as string, payload.part as 'together' | 'principal' | 'interest' | undefined); break;
+            case 'game:investment-early-withdraw': withdrawFixedIncomeEarly(game, identity.playerId, payload.investmentId as string); break;
             case 'game:finish-turn': finishTurn(game, identity.playerId); break;
             case 'game:build': buildProperty(game, board, identity.playerId, payload.propertyId as string, payload.building as 'house' | 'hotel'); break;
             case 'game:sell-building': sellBuilding(game, board, identity.playerId, payload.propertyId as string); break;

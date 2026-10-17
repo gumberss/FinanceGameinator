@@ -7,7 +7,7 @@ import { resolve } from 'node:path';
 import { BoardsService } from './boards.service';
 import { RoomsService } from './rooms.service';
 import { RoomsGateway } from './rooms.gateway';
-import { calculateBankInterestRate, calculateLoanTerms } from './game-engine';
+import { calculateBankInterestRate, calculateFixedIncomeTerms, calculateLoanTerms } from './game-engine';
 
 @Controller('api')
 class RoomsController {
@@ -26,6 +26,16 @@ class RoomsController {
             const rate = typeof values.interestRate === 'number' ? values.interestRate : calculateBankInterestRate(board, installments);
             return calculateLoanTerms(values.principal as number, rate, installments);
         }
+        catch (error) { throw new BadRequestException(error instanceof Error ? error.message : 'Termos invalidos.'); }
+    }
+
+    @Post('investment-terms') investmentTerms(@Body() input: unknown) {
+        if (!input || typeof input !== 'object') throw new BadRequestException('Informe os termos do investimento.');
+        const values = input as Record<string, unknown>;
+        const board = this.boards.get(values.boardId);
+        const product = board.financialEducation.fixedIncomeProducts.find(candidate => candidate.id === values.productId);
+        if (!product) throw new BadRequestException('Selecione um produto de renda fixa valido.');
+        try { return calculateFixedIncomeTerms(product, values.principal as number, values.termCycles as number); }
         catch (error) { throw new BadRequestException(error instanceof Error ? error.message : 'Termos invalidos.'); }
     }
 

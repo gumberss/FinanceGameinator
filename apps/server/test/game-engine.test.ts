@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { acceptPlayerLoan, applyTransaction, buildProperty, buyProperty, calculateBankInterestRate, cancelPlayerLoanRequest, calculateLoanTerms, declineBail, declareBankruptcy, finishTurn, GameState, payBail, repayLoan, requestPlayerLoan, respondPlayerLoan, respondPropertyOffer, resolveRent, roll, sellBuilding, sellProperty, sendPropertyOffer, startGame, takeBankLoan, TOKEN_COLORS, validateBoard } from '../src/game-engine';
+import { acceptPlayerLoan, applyTransaction, buildProperty, buyProperty, calculateBankInterestRate, calculateEarlyWithdrawalTerms, calculateFixedIncomeTerms, cancelPlayerLoanRequest, calculateLoanTerms, claimFixedIncomeInvestment, createFixedIncomeInvestment, declineBail, declareBankruptcy, depositEmergencyFund, finishTurn, GameState, payBail, repayLoan, requestPlayerLoan, respondPlayerLoan, respondPropertyOffer, resolveRent, roll, sellBuilding, sellProperty, sendPropertyOffer, startGame, takeBankLoan, TOKEN_COLORS, validateBoard, withdrawEmergencyFund, withdrawFixedIncomeEarly } from '../src/game-engine';
 
 const board = validateBoard(JSON.parse(readFileSync(resolve(__dirname, '../boards/classic.json'), 'utf8')));
 const players = [{ id: 'one', name: 'Ana', online: true, color: TOKEN_COLORS[0] }, { id: 'two', name: 'Bia', online: true, color: TOKEN_COLORS[1] }];
@@ -294,11 +294,14 @@ test('older board JSON remains valid and receives compatible rent/development de
     delete legacy.victoryCondition;
     delete legacy.bankruptcyRule;
     delete legacy.developmentRules;
+    delete legacy.financialEducation;
     for (const property of legacy.properties) delete property.rentSchedule;
     const loaded = validateBoard(legacy);
     assert.equal(loaded.victoryCondition, 'lastSolventPlayer');
     assert.equal(loaded.developmentRules.maxHousesPerProperty, 4);
     assert.equal(loaded.developmentRules.jailFeeIncreaseRate, 0.1);
+    assert.equal(loaded.financialEducation.emergencyFundInterestRateBpsPerCycle, 50);
+    assert.deepEqual(loaded.financialEducation.fixedIncomeProducts.map(product => product.interestMethod), ['simple', 'compound']);
     assert.deepEqual(loaded.properties[0].rentSchedule, [12000, 24000, 36000, 48000, 72000, 96000]);
 });
 
@@ -494,4 +497,192 @@ test('Start installments are due but do not change balances until explicitly pai
     assert.equal(moved.players[0].balance, before + board.startBonus - 6000);
     assert.equal(moved.loans[0].outstanding, 6000);
     assert.equal(moved.loans[0].installmentsRemaining, 1);
+});
+
+test('emergency fund deposits and withdrawals are bounded, explicit, and idempotent', () => {
+    const state = startGame(board, players);
+    const player = state.players[0];
+    depositEmergencyFund(state, player.id, 10000, 'deposit-once');
+    const afterDeposit = structuredClone(state);
+    assert.equal(player.balance, board.startingBalance - 10000);
+    assert.equal(player.emergencyFundBalance, 10000);
+    depositEmergencyFund(state, player.id, 10000, 'deposit-once');
+    assert.deepEqual(state, afterDeposit);
+
+    const beforeInvalidDeposit = structuredClone(state);
+    assert.throws(() => depositEmergencyFund(state, player.id, player.balance + 1, 'too-much'), /Saldo insuficiente/);
+    assert.deepEqual(state, beforeInvalidDeposit);
+    withdrawEmergencyFund(state, player.id, 4000, 'withdraw-once');
+    const afterWithdrawal = structuredClone(state);
+    withdrawEmergencyFund(state, player.id, 4000, 'withdraw-once');
+    assert.deepEqual(state, afterWithdrawal);
+    assert.equal(player.emergencyFundBalance, 6000);
+    assert.equal(player.balance, board.startingBalance - 6000);
+    const beforeInvalidWithdrawal = structuredClone(state);
+    assert.throws(() => withdrawEmergencyFund(state, player.id, 6001, 'too-much'), /Saldo insuficiente/);
+    assert.deepEqual(state, beforeInvalidWithdrawal);
+});
+
+test('emergency fund earns one configurable credit per Start crossing and uses the balance at that boundary', () => {
+    const state = startGame(board, players);
+    const player = state.players[0];
+    depositEmergencyFund(state, player.id, 10000, 'before-cycle');
+
+    player.position = 0;
+    state.phase = 'awaitingRoll';
+    roll(state, board, player.id, [6, 6]);
+    assert.equal(player.emergencyFundBalance, 10050);
+    assert.equal(player.emergencyFundInterestPrevious, 50);
+    assert.equal(player.emergencyFundInterestTotal, 50);
+    assert.equal(player.emergencyFundLastProcessedCycle, 1);
+
+    const restored = JSON.parse(JSON.stringify(state)) as GameState;
+    const restoredPlayer = restored.players[0];
+    depositEmergencyFund(restored, restoredPlayer.id, 10000, 'after-cycle');
+    restoredPlayer.position = 0;
+    restored.phase = 'awaitingRoll';
+    roll(restored, board, restoredPlayer.id, [6, 6]);
+    assert.equal(restoredPlayer.emergencyFundBalance, 20150);
+    assert.equal(restoredPlayer.emergencyFundInterestPrevious, 100);
+    assert.equal(restoredPlayer.emergencyFundInterestTotal, 150);
+    assert.equal(restoredPlayer.emergencyFundLastProcessedCycle, 2);
+    assert.equal(restored.transactions.filter(transaction => transaction.type === 'emergencyFundInterest').length, 2);
+    assert.equal(restored.transactions.find(transaction => transaction.type === 'emergencyFundInterest')?.amount, 50);
+});
+
+test('multiple Start crossings process emergency interest once per crossing', () => {
+    const shortBoard = validateBoard({
+        ...JSON.parse(readFileSync(resolve(__dirname, '../boards/classic.json'), 'utf8')),
+        spaces: [
+            { id: 'start', type: 'start', name: 'Inicio' },
+            { id: 'jail', type: 'jail', name: 'Prisao' },
+            { id: 'holiday', type: 'holiday', name: 'Ferias' },
+            { id: 'paulista-end', type: 'property', name: 'Avenida Paulista', propertyId: 'paulista' },
+        ],
+    });
+    const state = startGame(shortBoard, players);
+    depositEmergencyFund(state, 'one', 10000, 'multi-crossing');
+    state.players[0].position = 3;
+    state.phase = 'awaitingRoll';
+    roll(state, shortBoard, 'one', [6, 6]);
+    assert.equal(state.startCrossings.one, 3);
+    assert.equal(state.players[0].emergencyFundLastProcessedCycle, 3);
+    assert.equal(state.players[0].emergencyFundBalance, 10151);
+    assert.equal(state.players[0].emergencyFundInterestTotal, 151);
+    const interestTransactions = state.transactions.filter(transaction => transaction.type === 'emergencyFundInterest');
+    assert.equal(interestTransactions.length, 3);
+    assert.equal(new Set(interestTransactions.map(transaction => transaction.id)).size, 3);
+});
+
+test('fixed-income estimates use integer basis points for simple and compound products', () => {
+    const [simple, compound] = board.financialEducation.fixedIncomeProducts;
+    assert.deepEqual(calculateFixedIncomeTerms(simple, 100000, 2), { principal: 100000, interestAmount: 3000, maturityAmount: 103000, rateBpsPerCycle: 150, termCycles: 2, interestMethod: 'simple' });
+    assert.deepEqual(calculateFixedIncomeTerms(compound, 100000, 3), { principal: 100000, interestAmount: 7690, maturityAmount: 107690, rateBpsPerCycle: 250, termCycles: 3, interestMethod: 'compound' });
+    assert.throws(() => calculateFixedIncomeTerms(simple, 100000, 3), /prazo/);
+});
+
+test('fixed-income creation reserves cash, accrues per cycle, and requires a confirmed maturity claim', () => {
+    const state = startGame(board, players);
+    state.phase = 'awaitingAction';
+    const player = state.players[0];
+    const simple = board.financialEducation.fixedIncomeProducts[0];
+    const compound = board.financialEducation.fixedIncomeProducts[1];
+    createFixedIncomeInvestment(state, board, player.id, simple.id, 100000, 2, 'simple-once');
+    createFixedIncomeInvestment(state, board, player.id, simple.id, 100000, 2, 'simple-once');
+    createFixedIncomeInvestment(state, board, player.id, compound.id, 100000, 3, 'compound-once');
+    assert.equal(player.balance, 100000);
+    assert.equal(state.investments.length, 2);
+
+    const beforeOverspend = structuredClone(state);
+    assert.throws(() => createFixedIncomeInvestment(state, board, player.id, simple.id, 100001, 2, 'overspend'), /Saldo insuficiente/);
+    assert.deepEqual(state, beforeOverspend);
+
+    for (let cycle = 0; cycle < 3; cycle++) {
+        player.position = 0;
+        state.phase = 'awaitingRoll';
+        roll(state, board, player.id, [6, 6]);
+    }
+    const liquid = state.investments.find(investment => investment.productId === simple.id)!;
+    const growth = state.investments.find(investment => investment.productId === compound.id)!;
+    assert.equal(liquid.creationCycle, 0);
+    assert.equal(liquid.maturityCycle, 2);
+    assert.equal(liquid.status, 'matured');
+    assert.equal(liquid.maturityAmount, 103000);
+    assert.equal(growth.status, 'matured');
+    assert.equal(growth.maturityAmount, 107690);
+    assert.equal(player.balance, 100000 + board.startBonus * 3);
+
+    const balanceBeforeClaim = player.balance;
+    claimFixedIncomeInvestment(state, player.id, liquid.id);
+    assert.equal(player.balance, balanceBeforeClaim + 103000);
+    assert.equal(liquid.status, 'claimed');
+    assert.throws(() => claimFixedIncomeInvestment(state, player.id, liquid.id), /ainda nao venceu|ja foi resgatado/);
+    assert.equal(player.balance, balanceBeforeClaim + 103000);
+    const restored = JSON.parse(JSON.stringify(state)) as GameState;
+    assert.deepEqual(restored.investments, state.investments);
+    assert.equal(restored.players[0].balance, player.balance);
+});
+
+test('separate maturity payouts release principal and interest only when each is claimed', () => {
+    const separateBoard = structuredClone(board);
+    separateBoard.financialEducation.fixedIncomeProducts[0].maturityPayout = 'separate';
+    const state = startGame(separateBoard, players);
+    state.phase = 'awaitingAction';
+    const player = state.players[0];
+    createFixedIncomeInvestment(state, separateBoard, player.id, 'liquid-note', 100000, 2, 'separate-payout');
+    for (let cycle = 0; cycle < 2; cycle++) {
+        player.position = 0;
+        state.phase = 'awaitingRoll';
+        roll(state, separateBoard, player.id, [6, 6]);
+    }
+    const investment = state.investments[0];
+    const balanceBeforeClaim = player.balance;
+    claimFixedIncomeInvestment(state, player.id, investment.id, 'principal');
+    assert.equal(player.balance, balanceBeforeClaim + investment.principal);
+    assert.equal(investment.status, 'matured');
+    assert.equal(investment.principalClaimed, true);
+    claimFixedIncomeInvestment(state, player.id, investment.id, 'interest');
+    assert.equal(player.balance, balanceBeforeClaim + investment.maturityAmount!);
+    assert.equal(investment.status, 'claimed');
+});
+
+test('early withdrawal displays and applies configured penalties, while locked products reject it', () => {
+    const state = startGame(board, players);
+    state.phase = 'awaitingAction';
+    const player = state.players[0];
+    createFixedIncomeInvestment(state, board, player.id, 'liquid-note', 100000, 4, 'liquid-early');
+    player.position = 0;
+    state.phase = 'awaitingRoll';
+    roll(state, board, player.id, [6, 6]);
+    const liquid = state.investments[0];
+    assert.deepEqual(calculateEarlyWithdrawalTerms(liquid), { principal: 100000, accruedInterest: 1500, penaltyAmount: 1500, payoutAmount: 100000 });
+    const beforeWithdrawal = player.balance;
+    withdrawFixedIncomeEarly(state, player.id, liquid.id);
+    assert.equal(player.balance, beforeWithdrawal + 100000);
+    assert.equal(liquid.status, 'withdrawnEarly');
+
+    state.phase = 'awaitingAction';
+    createFixedIncomeInvestment(state, board, player.id, 'term-certificate', 50000, 3, 'locked-note');
+    const locked = state.investments[1];
+    const beforeRejectedWithdrawal = structuredClone(state);
+    assert.throws(() => withdrawFixedIncomeEarly(state, player.id, locked.id), /nao permite resgate/);
+    assert.deepEqual(state, beforeRejectedWithdrawal);
+});
+
+test('emergency fund withdrawal can cover a pending mandatory tax before explicit payment', () => {
+    const state = startGame(board, players);
+    const player = state.players[0];
+    depositEmergencyFund(state, player.id, 10000, 'tax-reserve');
+    const payment = { id: 'emergency-tax', type: 'tax' as const, playerId: player.id, recipientId: 'bank' as const, amount: 15000, description: 'Tax due' };
+    state.pendingPayments.push(payment);
+    state.pendingAction = { type: 'tax', playerId: player.id, amount: payment.amount, paymentId: payment.id };
+    state.phase = 'awaitingDebtResolution';
+    withdrawEmergencyFund(state, player.id, 10000, 'tax-withdrawal');
+    assert.equal(state.pendingPayments[0].id, payment.id);
+    assert.equal(state.phase, 'awaitingDebtResolution');
+    assert.equal(player.balance, board.startingBalance);
+    assert.equal(player.emergencyFundBalance, 0);
+    resolveRent(state, board, player.id, payment.id);
+    assert.equal(player.balance, board.startingBalance - payment.amount);
+    assert.equal(state.phase, 'awaitingAction');
 });
