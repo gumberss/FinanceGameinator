@@ -25,7 +25,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\..\Shared\FinanceGameinator.Shared.Test\FinanceGameinator.Shared.Test.csproj" />
-    <ProjectReference Include="..\FinanceGameinator.Players.Api\FinanceGameinator.Players.Api.csproj" />
   </ItemGroup>
 
 </Project>

@@ -1,0 +1,215 @@
+{
+    "id": "classic",
+    "name": "Avenida das Oportunidades",
+    "nameTranslations": {
+        "en": "Avenue of Opportunities"
+    },
+    "description": "Uma primeira volta pelo bairro dos grandes negocios.",
+    "descriptionTranslations": {
+        "en": "A first lap around the neighborhood of big deals."
+    },
+    "currency": "R$",
+    "startingBalance": 300000,
+    "startBonus": 20000,
+    "jailFee": 50000,
+    "bankInterestRate": 0.3,
+    "loanRules": {
+        "maxActiveLoans": 3,
+        "maxInstallments": 12
+    },
+    "victoryCondition": "lastSolventPlayer",
+    "bankruptcyRule": "transferToCreditor",
+    "developmentRules": {
+        "maxBuildsPerTurn": 1,
+        "maxHousesPerProperty": 4,
+        "requireCompleteColorGroup": true,
+        "requireEvenBuilding": true,
+        "hotelRequiresMaxHouses": true,
+        "rentMultipliers": [
+            1,
+            2,
+            3,
+            4,
+            6,
+            8
+        ],
+        "jailFeeIncreaseRate": 0.1
+    },
+    "spaces": [
+        {
+            "id": "start",
+            "type": "start",
+            "name": "Inicio",
+            "nameTranslations": {
+                "en": "Start"
+            }
+        },
+        {
+            "id": "paulista",
+            "type": "property",
+            "name": "Avenida Paulista",
+            "nameTranslations": {
+                "en": "Paulista Avenue"
+            },
+            "propertyId": "paulista"
+        },
+        {
+            "id": "holiday-1",
+            "type": "holiday",
+            "name": "Ferias",
+            "nameTranslations": {
+                "en": "Holiday"
+            }
+        },
+        {
+            "id": "ibirapuera",
+            "type": "property",
+            "name": "Parque Ibirapuera",
+            "nameTranslations": {
+                "en": "Ibirapuera Park"
+            },
+            "propertyId": "ibirapuera"
+        },
+        {
+            "id": "tax",
+            "type": "tax",
+            "name": "Imposto de renda",
+            "nameTranslations": {
+                "en": "Income tax"
+            },
+            "amount": 15000
+        },
+        {
+            "id": "jail",
+            "type": "jail",
+            "name": "Visita a prisao",
+            "nameTranslations": {
+                "en": "Jail visit"
+            }
+        },
+        {
+            "id": "pinheiros",
+            "type": "property",
+            "name": "Rua dos Pinheiros",
+            "nameTranslations": {
+                "en": "Pinheiros Street"
+            },
+            "propertyId": "pinheiros"
+        },
+        {
+            "id": "go-to-jail",
+            "type": "goToJail",
+            "name": "Va para a prisao",
+            "nameTranslations": {
+                "en": "Go to jail"
+            }
+        },
+        {
+            "id": "liberdade",
+            "type": "property",
+            "name": "Praca da Liberdade",
+            "nameTranslations": {
+                "en": "Liberty Square"
+            },
+            "propertyId": "liberdade"
+        },
+        {
+            "id": "holiday-2",
+            "type": "holiday",
+            "name": "Descanso prolongado",
+            "nameTranslations": {
+                "en": "Extended holiday"
+            }
+        },
+        {
+            "id": "savassi",
+            "type": "property",
+            "name": "Avenida do Contorno",
+            "nameTranslations": {
+                "en": "Contorno Avenue"
+            },
+            "propertyId": "savassi"
+        },
+        {
+            "id": "bonus",
+            "type": "bonus",
+            "name": "Bonus",
+            "nameTranslations": {
+                "en": "Bonus"
+            },
+            "amount": 10000
+        }
+    ],
+    "properties": [
+        {
+            "id": "paulista",
+            "name": "Avenida Paulista",
+            "nameTranslations": {
+                "en": "Paulista Avenue"
+            },
+            "image": "property.svg",
+            "color": "#e98570",
+            "group": "Centro financeiro",
+            "price": 80000,
+            "rent": 12000,
+            "houseCost": 40000,
+            "hotelCost": 80000
+        },
+        {
+            "id": "ibirapuera",
+            "name": "Parque Ibirapuera",
+            "nameTranslations": {
+                "en": "Ibirapuera Park"
+            },
+            "image": "property.svg",
+            "color": "#e98570",
+            "group": "Centro financeiro",
+            "price": 95000,
+            "rent": 16000,
+            "houseCost": 45000,
+            "hotelCost": 90000
+        },
+        {
+            "id": "pinheiros",
+            "name": "Rua dos Pinheiros",
+            "nameTranslations": {
+                "en": "Pinheiros Street"
+            },
+            "image": "property.svg",
+            "color": "#7a9eb1",
+            "group": "Zona oeste",
+            "price": 65000,
+            "rent": 9000,
+            "houseCost": 30000,
+            "hotelCost": 65000
+        },
+        {
+            "id": "liberdade",
+            "name": "Praca da Liberdade",
+            "nameTranslations": {
+                "en": "Liberty Square"
+            },
+            "image": "property.svg",
+            "color": "#7a9eb1",
+            "group": "Zona oeste",
+            "price": 70000,
+            "rent": 10000,
+            "houseCost": 32000,
+            "hotelCost": 68000
+        },
+        {
+            "id": "savassi",
+            "name": "Avenida do Contorno",
+            "nameTranslations": {
+                "en": "Contorno Avenue"
+            },
+            "image": "property.svg",
+            "color": "#8b9f69",
+            "group": "Minas Gerais",
+            "price": 60000,
+            "rent": 8000,
+            "houseCost": 28000,
+            "hotelCost": 60000
+        }
+    ]
+}

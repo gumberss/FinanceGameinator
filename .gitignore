@@ -1,5 +1,22 @@
 ########################### GENERAL ###########################
 **/.env
+node_modules/
+apps/*/dist/
+apps/server/data/
+*.log
+test-results/
+playwright-report/
+legacy/**/build/
+legacy/**/bin/
+legacy/**/obj/
+legacy/**/.vs/
+legacy/**/.dart_tool/
+legacy/**/.idea/
+legacy/**/Secrets.dart
+legacy/**/cdk.out/
+legacy/**/cdk.json
+legacy/**/.flutter-plugins*
+legacy/**/local.properties
 ########################### END GENERAL ###########################
 
 ########################### MOBILE APP ###########################
