@@ -47,8 +47,22 @@ class RoomsController {
     @Post('rooms/join') join(@Body() body: unknown, @Req() request: { ip: string }) {
         this.rooms.limit(`http:${request.ip}`);
         const session = this.rooms.join(body);
+        if (session.recoveredExistingSeat) this.gateway.revokePlayer(session.playerId);
         this.gateway.publish(session.room);
         return session;
+    }
+
+    @Post('rooms/recover') recover(@Body() body: unknown, @Req() request: { ip: string }) {
+        this.rooms.limit(`http:${request.ip}`);
+        const session = this.rooms.recover(body);
+        this.gateway.revokePlayer(session.playerId);
+        this.gateway.publish(session.room);
+        return session;
+    }
+
+    @Post('rooms/recovery-key') recoveryKey(@Body() body: unknown, @Req() request: { ip: string }) {
+        this.rooms.limit(`http:${request.ip}`);
+        return this.rooms.issueRecoveryKey(body);
     }
 }
 

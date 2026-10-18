@@ -260,6 +260,22 @@ h2 {
     max-width: 324px;
 }
 
+.recovery-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    margin-top: 14px;
+    padding: 7px 0;
+    border: 0;
+    background: transparent;
+    color: #54715a;
+    font-size: 11px;
+    font-weight: 600;
+    text-decoration: underline;
+    text-decoration-color: #b8c9b4;
+    text-underline-offset: 3px;
+}
+
 .button {
     min-height: 54px;
     padding: 14px 19px;
@@ -492,6 +508,13 @@ h2 {
     font-size: 31px;
     margin-bottom: 28px;
     font-weight: 500;
+}
+
+.recovery-help {
+    margin-top: 9px;
+    color: #718075;
+    font-size: 11px;
+    line-height: 1.5;
 }
 
 form label {
@@ -897,6 +920,40 @@ input::placeholder {
 
 .dialog-actions .button {
     flex: 1;
+}
+
+.recovery-dialog {
+    max-width: 470px;
+}
+
+.recovery-dialog>svg {
+    color: #3e6d4f;
+}
+
+.recovery-key-display {
+    display: grid;
+    gap: 8px;
+    margin-top: 20px;
+    padding: 14px;
+    border: 1px solid #d8e4d2;
+    border-radius: 6px;
+    background: #eff5eb;
+}
+
+.recovery-key-display>span {
+    color: #687569;
+    font-size: 10px;
+    font-weight: 600;
+}
+
+.recovery-key-display code {
+    color: #294333;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1.5;
+    overflow-wrap: anywhere;
+    user-select: all;
 }
 
 .danger {

@@ -1,6 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdtempSync, rmSync } from 'node:fs';
+import { createHash } from 'node:crypto';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
@@ -9,7 +10,7 @@ import { createApplication } from '../src/app';
 import { BoardsService } from '../src/boards.service';
 import { RoomView, RoomsService } from '../src/rooms.service';
 
-type Session = { token: string; playerId: string; room: RoomView };
+type Session = { token: string; playerId: string; room: RoomView; recoveryKey?: string };
 const action = (socket: Socket, event: string, payload: Record<string, unknown> = {}) => socket.timeout(2500).emitWithAck(event, payload);
 const update = (socket: Socket, predicate: (room: RoomView) => boolean) => new Promise<RoomView>((resolve, reject) => {
     const timer = setTimeout(() => { socket.off('room:update', listener); reject(new Error('Room update timed out')); }, 4000);
@@ -32,6 +33,7 @@ test('real HTTP + sockets: passwords, presence, authorization, reconnect, start 
         assert.equal((await post('rooms', { name: 'A', password: '1234' })).status, 400);
         const owner = await (await post('rooms', { name: 'Owner', password: 'safe-pass' })).json() as Session;
         assert.match(owner.room.code, /^[A-Z2-9]{6}$/);
+        assert.match(owner.recoveryKey ?? '', /^[A-Z2-9]{6}-(?:[A-F0-9]{4}-){9}[A-F0-9]{4}$/);
         assert.equal(owner.room.players[0].color, '#e98570');
         assert.ok((await (await fetch(`${url}/api/boards`)).json() as unknown[]).length > 0);
         const investmentTerms = await (await post('investment-terms', { boardId: 'classic', productId: 'liquid-note', principal: 100000, termCycles: 2 })).json() as { interestAmount: number; maturityAmount: number; rateBpsPerCycle: number };
@@ -87,10 +89,20 @@ test('real HTTP + sockets: passwords, presence, authorization, reconnect, start 
         const cannotLeave = await action(visitor, 'room:leave');
         assert.equal(cannotLeave.ok, false);
         assert.equal(cannotLeave.error, 'Nao e possivel sair de uma partida em andamento.');
-        host.emit('room:leave', {});
-        await new Promise<void>(resolve => host.once('room:closed', resolve));
-        assert.equal((await post('rooms/join', { name: 'Guest', password: 'safe-pass', code: owner.room.code })).status, 404);
-        const impostor = io(url, { auth: { code: owner.room.code, token: guest.token }, transports: ['websocket'], forceNew: true });
+        const ownerRevoked = new Promise<void>(resolve => host.once('session:error', () => resolve()));
+        const recoveredOwner = await (await post('rooms/recover', { recoveryKey: owner.recoveryKey })).json() as Session;
+        assert.equal(recoveredOwner.playerId, owner.playerId);
+        assert.equal(recoveredOwner.room.status, 'started');
+        assert.notEqual(recoveredOwner.token, owner.token);
+        await ownerRevoked;
+        assert.equal(host.connected, false);
+        assert.equal((await post('rooms/join', { name: 'Unknown', password: 'safe-pass', code: owner.room.code })).status, 409);
+        const rejoinedOwner = await (await post('rooms/join', { name: 'Owner', password: 'safe-pass', code: owner.room.code })).json() as Session;
+        assert.equal(rejoinedOwner.playerId, owner.playerId);
+        assert.equal(rejoinedOwner.room.status, 'started');
+        assert.notEqual(rejoinedOwner.token, recoveredOwner.token);
+        assert.ok(rejoinedOwner.recoveryKey);
+        const impostor = io(url, { auth: { code: owner.room.code, token: owner.token }, transports: ['websocket'], forceNew: true });
         sockets.push(impostor);
         await new Promise<void>((resolve, reject) => {
             const timer = setTimeout(() => reject(new Error('Expected rejection')), 2500);
@@ -112,6 +124,61 @@ test('SQLite persists membership and hashed secrets; restart resets presence', (
         assert.equal(restored.authenticate(session.room.code, session.token).playerId, session.playerId);
         assert.equal(restored.view(session.room.code).players[0].online, false);
         assert.throws(() => restored.authenticate(session.room.code, '0'.repeat(64)));
+    } finally { restored.onModuleDestroy(); rmSync(directory, { recursive: true }); }
+});
+
+test('saved-game recovery restores the same seat months later and invalidates the old session token', () => {
+    const directory = mkdtempSync(join(tmpdir(), 'finance-gameinator-recovery-'));
+    const path = join(directory, 'rooms.sqlite');
+    const original = new RoomsService(path, new BoardsService());
+    const owner = original.create({ name: 'Owner', password: 'safe-pass' });
+    const guest = original.join({ name: 'Guest', password: 'safe-pass', code: owner.room.code });
+    original.connect({ code: owner.room.code, playerId: owner.playerId }, 'owner-socket');
+    original.connect({ code: owner.room.code, playerId: guest.playerId }, 'guest-socket');
+    original.start({ code: owner.room.code, playerId: owner.playerId }, 'classic');
+    const before = original.gameAction({ code: owner.room.code, playerId: owner.playerId }, 'game:roll');
+    assert.equal(JSON.stringify(owner.room).includes(owner.recoveryKey), false);
+    original.onModuleDestroy();
+
+    const restored = new RoomsService(path, new BoardsService());
+    try {
+        assert.throws(() => restored.recover({ recoveryKey: `${owner.room.code}-0000` }), /invalido/);
+        const recovered = restored.recover({ recoveryKey: owner.recoveryKey });
+        assert.equal(recovered.playerId, owner.playerId);
+        assert.notEqual(recovered.token, owner.token);
+        assert.equal(recovered.room.status, 'started');
+        assert.deepEqual(recovered.room.game?.lastRoll, before.game?.lastRoll);
+        assert.equal(recovered.room.game?.currentPlayerId, before.game?.currentPlayerId);
+        assert.equal(restored.authenticate(owner.room.code, recovered.token).playerId, owner.playerId);
+        assert.throws(() => restored.authenticate(owner.room.code, owner.token), /invalida/);
+
+        const replacement = restored.issueRecoveryKey({ code: owner.room.code, token: recovered.token, rotate: true }).recoveryKey;
+        assert.ok(replacement);
+        assert.notEqual(replacement, owner.recoveryKey);
+        assert.throws(() => restored.recover({ recoveryKey: owner.recoveryKey }), /invalido/);
+    } finally { restored.onModuleDestroy(); rmSync(directory, { recursive: true }); }
+});
+
+test('legacy SQLite player tables migrate recovery support without losing existing seats', () => {
+    const directory = mkdtempSync(join(tmpdir(), 'finance-gameinator-recovery-migration-'));
+    const path = join(directory, 'rooms.sqlite');
+    const legacy = new DatabaseSync(path);
+    const token = 'a'.repeat(64);
+    legacy.exec(`
+        PRAGMA foreign_keys = ON;
+        CREATE TABLE rooms (code TEXT PRIMARY KEY, owner_id TEXT NOT NULL, password_hash TEXT NOT NULL, salt TEXT NOT NULL, status TEXT NOT NULL DEFAULT 'waiting', created_at TEXT NOT NULL, game_json TEXT);
+        CREATE TABLE players (id TEXT PRIMARY KEY, room_code TEXT NOT NULL REFERENCES rooms(code) ON DELETE CASCADE, name TEXT NOT NULL, token_hash TEXT NOT NULL UNIQUE, online INTEGER NOT NULL DEFAULT 0, joined_at TEXT NOT NULL);
+    `);
+    legacy.prepare('INSERT INTO rooms(code, owner_id, password_hash, salt, created_at) VALUES (?, ?, ?, ?, ?)').run('ABC234', 'legacy-player', 'unused', 'unused', new Date().toISOString());
+    legacy.prepare('INSERT INTO players(id, room_code, name, token_hash, joined_at) VALUES (?, ?, ?, ?, ?)').run('legacy-player', 'ABC234', 'Legacy', createHash('sha256').update(token).digest('hex'), new Date().toISOString());
+    legacy.close();
+
+    const restored = new RoomsService(path, new BoardsService());
+    try {
+        const recoveryKey = restored.issueRecoveryKey({ code: 'ABC234', token }).recoveryKey!;
+        const recovered = restored.recover({ recoveryKey });
+        assert.equal(recovered.playerId, 'legacy-player');
+        assert.equal(recovered.room.players[0].name, 'Legacy');
     } finally { restored.onModuleDestroy(); rmSync(directory, { recursive: true }); }
 });
 

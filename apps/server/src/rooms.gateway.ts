@@ -32,6 +32,13 @@ export class RoomsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
 
     publish(room: RoomView) { this.server.to(room.code).emit('room:update', room); }
+    revokePlayer(playerId: string) {
+        for (const socket of this.server.sockets.sockets.values()) {
+            if (socket.data.identity?.playerId !== playerId) continue;
+            socket.emit('session:error', 'Sua sessao foi recuperada em outro dispositivo.');
+            socket.disconnect(true);
+        }
+    }
     private message(error: unknown) { return error instanceof Error ? error.message : 'Nao foi possivel concluir a acao.'; }
 
     @SubscribeMessage('room:sync')

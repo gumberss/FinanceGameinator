@@ -14,7 +14,7 @@ export interface RoomView {
     game: GameState | null;
 }
 interface RoomRow { code: string; owner_id: string; password_hash: string; salt: string; status: 'waiting' | 'started'; game_json: string | null }
-interface PlayerRow { id: string; room_code: string; name: string; token_hash: string; online: number; token_color: string }
+interface PlayerRow { id: string; room_code: string; name: string; token_hash: string; recovery_hash: string | null; online: number; token_color: string }
 export interface Identity { code: string; playerId: string }
 
 @Injectable()
@@ -37,7 +37,7 @@ export class RoomsService implements OnModuleDestroy {
       );
       CREATE TABLE IF NOT EXISTS players (
         id TEXT PRIMARY KEY, room_code TEXT NOT NULL REFERENCES rooms(code) ON DELETE CASCADE,
-        name TEXT NOT NULL, token_hash TEXT NOT NULL UNIQUE, online INTEGER NOT NULL DEFAULT 0,
+                name TEXT NOT NULL, token_hash TEXT NOT NULL UNIQUE, recovery_hash TEXT, online INTEGER NOT NULL DEFAULT 0,
         token_color TEXT NOT NULL DEFAULT '#e98570',
         joined_at TEXT NOT NULL
       );
@@ -48,6 +48,8 @@ export class RoomsService implements OnModuleDestroy {
         const playerColumns = this.db.prepare('PRAGMA table_info(players)').all() as { name: string }[];
         if (!roomColumns.some(column => column.name === 'game_json')) this.db.exec('ALTER TABLE rooms ADD COLUMN game_json TEXT');
         if (!playerColumns.some(column => column.name === 'token_color')) this.db.exec("ALTER TABLE players ADD COLUMN token_color TEXT NOT NULL DEFAULT '#e98570'");
+        if (!playerColumns.some(column => column.name === 'recovery_hash')) this.db.exec('ALTER TABLE players ADD COLUMN recovery_hash TEXT');
+        this.db.exec('CREATE INDEX IF NOT EXISTS players_by_recovery ON players(room_code, recovery_hash)');
     }
 
     onModuleDestroy() { this.closed = true; this.db.close(); }
@@ -73,9 +75,19 @@ export class RoomsService implements OnModuleDestroy {
 
     private code(value: unknown) { return typeof value === 'string' ? value.trim().toUpperCase() : ''; }
     private hashToken(token: string) { return createHash('sha256').update(token).digest('hex'); }
+    private createRecoveryKey(code: string) {
+        const secret = randomBytes(20).toString('hex');
+        const formattedSecret = secret.match(/.{1,4}/g)!.join('-').toUpperCase();
+        return { recoveryKey: `${code}-${formattedSecret}`, recoveryHash: this.hashToken(secret) };
+    }
+    private parseRecoveryKey(value: unknown) {
+        const compact = typeof value === 'string' ? value.replace(/[\s-]/g, '').toUpperCase() : '';
+        if (!/^[A-Z2-9]{6}[A-F0-9]{40}$/.test(compact)) throw new BadRequestException('Codigo de jogo salvo invalido.');
+        return { code: compact.slice(0, 6), secretHash: this.hashToken(compact.slice(6).toLowerCase()) };
+    }
     private row(code: string) {
         const room = this.db.prepare('SELECT * FROM rooms WHERE code = ?').get(code) as unknown as RoomRow | undefined;
-        if (!room) throw new NotFoundException('Sala nao encontrada. Confira o codigo.');
+        if (!room) throw new NotFoundException('Sala nao encontrada. Confira o codigo e se voce esta usando o mesmo servidor e banco de dados.');
         return room;
     }
 
@@ -157,13 +169,14 @@ export class RoomsService implements OnModuleDestroy {
         const salt = randomBytes(16).toString('hex');
         const passwordHash = scryptSync(password, salt, 64).toString('hex');
         const token = randomBytes(32).toString('hex');
+        const { recoveryKey, recoveryHash } = this.createRecoveryKey(code);
         this.db.exec('BEGIN IMMEDIATE');
         try {
             this.db.prepare('INSERT INTO rooms(code, owner_id, password_hash, salt, created_at) VALUES (?, ?, ?, ?, ?)').run(code, playerId, passwordHash, salt, new Date().toISOString());
-            this.insertPlayer(code, playerId, name, token, TOKEN_COLORS[0]);
+            this.insertPlayer(code, playerId, name, token, recoveryHash, TOKEN_COLORS[0]);
             this.db.exec('COMMIT');
         } catch (error) { this.db.exec('ROLLBACK'); throw error; }
-        return { token, playerId, room: this.view(code) };
+        return { token, playerId, room: this.view(code), recoveryKey, recoveredExistingSeat: false };
     }
 
     join(input: unknown) {
@@ -171,18 +184,54 @@ export class RoomsService implements OnModuleDestroy {
         if (!/^[A-Z2-9]{6}$/.test(code)) throw new BadRequestException('Informe o codigo de 6 caracteres.');
         const room = this.row(code);
         if (!timingSafeEqual(scryptSync(password, room.salt, 64), Buffer.from(room.password_hash, 'hex'))) throw new ForbiddenException('Senha incorreta.');
+        if (room.status === 'started') {
+            const matches = this.db.prepare('SELECT id FROM players WHERE room_code = ? AND name = ? COLLATE NOCASE').all(code, name) as { id: string }[];
+            if (matches.length !== 1) throw new ConflictException(matches.length > 1 ? 'Ha varios jogadores com esse nome. Use o codigo de jogo salvo.' : 'Esta partida ja comecou. Use o mesmo nome, codigo e senha ou o codigo de jogo salvo.');
+            const playerId = matches[0].id;
+            const token = randomBytes(32).toString('hex');
+            const { recoveryKey, recoveryHash } = this.createRecoveryKey(code);
+            this.db.prepare('UPDATE players SET token_hash = ?, recovery_hash = ?, online = 0 WHERE id = ? AND room_code = ?').run(this.hashToken(token), recoveryHash, playerId, code);
+            this.connections.delete(playerId);
+            return { token, playerId, room: this.view(code), recoveryKey, recoveredExistingSeat: true };
+        }
         if (room.status !== 'waiting') throw new ConflictException('Esta partida ja comecou.');
         if (this.view(code).players.length >= 8) throw new ConflictException('A sala esta cheia (8 jogadores).');
         const color = TOKEN_COLORS.find(candidate => !this.view(code).players.some(player => player.color === candidate));
         if (!color) throw new ConflictException('Nao ha cores de token disponiveis.');
         const playerId = randomUUID();
         const token = randomBytes(32).toString('hex');
-        this.insertPlayer(code, playerId, name, token, color);
-        return { token, playerId, room: this.view(code) };
+        const { recoveryKey, recoveryHash } = this.createRecoveryKey(code);
+        this.insertPlayer(code, playerId, name, token, recoveryHash, color);
+        return { token, playerId, room: this.view(code), recoveryKey, recoveredExistingSeat: false };
     }
 
-    private insertPlayer(code: string, playerId: string, name: string, token: string, color: string) {
-        this.db.prepare('INSERT INTO players(id, room_code, name, token_hash, token_color, joined_at) VALUES (?, ?, ?, ?, ?, ?)').run(playerId, code, name, this.hashToken(token), color, new Date().toISOString());
+    recover(input: unknown) {
+        if (!input || typeof input !== 'object') throw new BadRequestException('Informe o codigo do jogo salvo.');
+        const { code, secretHash } = this.parseRecoveryKey((input as Record<string, unknown>).recoveryKey);
+        this.row(code);
+        const player = this.db.prepare('SELECT id FROM players WHERE room_code = ? AND recovery_hash = ?').get(code, secretHash) as { id: string } | undefined;
+        if (!player) throw new ForbiddenException('Codigo de jogo salvo invalido.');
+        const token = randomBytes(32).toString('hex');
+        const { recoveryKey, recoveryHash } = this.createRecoveryKey(code);
+        this.db.prepare('UPDATE players SET token_hash = ?, recovery_hash = ?, online = 0 WHERE id = ? AND room_code = ?').run(this.hashToken(token), recoveryHash, player.id, code);
+        this.connections.delete(player.id);
+        return { token, playerId: player.id, room: this.view(code), recoveryKey, recoveredExistingSeat: true };
+    }
+
+    issueRecoveryKey(input: unknown) {
+        if (!input || typeof input !== 'object') throw new BadRequestException('Sessao invalida.');
+        const values = input as Record<string, unknown>;
+        const identity = this.authenticate(values.code, values.token);
+        const player = this.db.prepare('SELECT recovery_hash FROM players WHERE id = ? AND room_code = ?').get(identity.playerId, identity.code) as { recovery_hash: string | null } | undefined;
+        if (!player) throw new ForbiddenException('Sessao invalida.');
+        if (player.recovery_hash && values.rotate !== true) return { recoveryKey: null };
+        const { recoveryKey, recoveryHash } = this.createRecoveryKey(identity.code);
+        this.db.prepare('UPDATE players SET recovery_hash = ? WHERE id = ? AND room_code = ?').run(recoveryHash, identity.playerId, identity.code);
+        return { recoveryKey };
+    }
+
+    private insertPlayer(code: string, playerId: string, name: string, token: string, recoveryHash: string, color: string) {
+        this.db.prepare('INSERT INTO players(id, room_code, name, token_hash, recovery_hash, token_color, joined_at) VALUES (?, ?, ?, ?, ?, ?, ?)').run(playerId, code, name, this.hashToken(token), recoveryHash, color, new Date().toISOString());
     }
 
     authenticate(codeInput: unknown, token: unknown): Identity {

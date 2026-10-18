@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
-import { ArrowDownToLine, ArrowLeft, ArrowRight, Banknote, Check, ChevronDown, Copy, Crown, Dice1, Dice2, Dice3, Dice4, Dice5, Dice6, DoorOpen, Eye, EyeOff, HandCoins, HeartHandshake, House, Landmark, Languages, LoaderCircle, LockKeyhole, LogOut, Map, Play, Plus, Users, Wallet, Wifi, WifiOff, X } from 'lucide-react';
+import { ArrowDownToLine, ArrowLeft, ArrowRight, Banknote, Check, ChevronDown, Copy, Crown, Dice1, Dice2, Dice3, Dice4, Dice5, Dice6, DoorOpen, Eye, EyeOff, HandCoins, HeartHandshake, House, KeyRound, Landmark, Languages, LoaderCircle, LockKeyhole, LogOut, Map, Play, Plus, Users, Wallet, Wifi, WifiOff, X } from 'lucide-react';
 import { io, type Socket } from 'socket.io-client';
 import { BoardScene } from './BoardScene';
 import { AccountTab } from './AccountTab';
@@ -20,9 +20,9 @@ type InvestmentTerms = { principal: number; interestAmount: number; maturityAmou
 type Payment = { id: string; type: 'rent' | 'tax' | 'loanInstallment'; playerId: string; recipientId: string; amount: number; description: string; propertyId?: string; loanId?: string };
 type Game = { boardId: string; status: 'playing' | 'finished'; winnerId: string | null; players: PlayerGameState[]; currentPlayerId: string; phase: string; propertyOwners: Record<string, string>; houses: Record<string, number>; loans: Loan[]; investments: Investment[]; pendingAction: { type: string; playerId: string; propertyId?: string; amount: number; ownerId?: string; paymentId?: string; loanId?: string } | null; pendingLoan: { id: string; lenderId: string; borrowerId: string; requestedAmount: number; installmentsTotal: number; requestedInterestRate: number; principal: number | null; interestRate: number | null; status: string } | null; pendingOffer: { id: string; propertyId: string; buyerId: string; ownerId: string; amount: number } | null; pendingPayments: Payment[]; pendingLandingPosition: number | null; offersThisTurn: number; builtThisTurn: boolean; startCrossings: Record<string, number>; lastRoll: [number, number] | null; log: string[]; events: { id: string; sequence: number; type: string; playerId: string | null; message: string; details: Record<string, string | number | boolean | null> }[]; transactions: { id: string; type: string; from: string; to: string; amount: number; description: string; details?: Record<string, string | number | boolean | null> }[] };
 type Room = { code: string; status: 'waiting' | 'started'; ownerId: string; players: { id: string; name: string; online: boolean; color: string }[]; game: Game | null };
-type Session = { token: string; playerId: string; room: Room };
+type Session = { token: string; playerId: string; room: Room; recoveryReady?: boolean; recoveryKey?: string };
 type Reply = { ok: boolean; room?: Room; error?: string };
-type Screen = 'home' | 'create' | 'join' | 'room';
+type Screen = 'home' | 'create' | 'join' | 'recover' | 'room';
 const storageKey = 'finance-gameinator.session';
 const languageStorageKey = 'finance-gameinator.language';
 const tokenColors = ['#e98570', '#547c9b', '#76955f', '#bb925b', '#9275a3', '#4caaa1', '#d16c94', '#5b6676'];
@@ -46,6 +46,7 @@ function storedSession(): Session | null {
 function screenForPath(): Screen {
     if (location.pathname === '/create') return 'create';
     if (location.pathname === '/join') return 'join';
+    if (location.pathname === '/recover') return 'recover';
     if (location.pathname.startsWith('/room/')) return 'room';
     return 'home';
 }
@@ -64,6 +65,12 @@ export function App() {
     const [showPassword, setShowPassword] = useState(false);
     const [copied, setCopied] = useState(false);
     const [confirmLeave, setConfirmLeave] = useState(false);
+    const [recoveryKeyInput, setRecoveryKeyInput] = useState('');
+    const [recoveryKeyToSave, setRecoveryKeyToSave] = useState<{ key: string; rotated: boolean } | null>(() => {
+        const key = storedSession()?.recoveryKey;
+        return key ? { key, rotated: false } : null;
+    });
+    const [recoveryKeyCopied, setRecoveryKeyCopied] = useState(false);
     const [boards, setBoards] = useState<Board[]>([]);
     const [selectedBoardId, setSelectedBoardId] = useState('');
     const [gameTab, setGameTab] = useState<'board' | 'account' | 'bank' | 'investments' | 'quality' | 'properties'>('board');
@@ -119,6 +126,7 @@ export function App() {
         const clearSession = (message: string) => {
             sessionStorage.removeItem(storageKey);
             setSession(null); setRoom(null); setBusy(false); setConfirmLeave(false);
+            setRecoveryKeyToSave(null);
             history.replaceState(null, '', '/'); setScreen('home'); setError(translateServerError(locale, message));
         };
         socket.on('connect', () => { setConnection('online'); setError(''); });
@@ -132,21 +140,44 @@ export function App() {
         return () => { socket.disconnect(); socketRef.current = null; };
     }, [session]);
 
+    useEffect(() => {
+        if (!session || session.recoveryReady) return;
+        const controller = new AbortController();
+        void fetch('/api/rooms/recovery-key', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ code: session.room.code, token: session.token }), signal: controller.signal,
+        }).then(async response => {
+            if (!response.ok) throw new Error('recovery');
+            return await response.json() as { recoveryKey: string | null };
+        }).then(result => {
+            const upgradedSession = { ...session, recoveryReady: true, ...(result.recoveryKey ? { recoveryKey: result.recoveryKey } : {}) };
+            sessionStorage.setItem(storageKey, JSON.stringify(upgradedSession));
+            setSession(upgradedSession);
+            if (result.recoveryKey) setRecoveryKeyToSave({ key: result.recoveryKey, rotated: false });
+        }).catch(() => { if (!controller.signal.aborted) setError(t('error.server')); });
+        return () => controller.abort();
+    }, [session]);
+
     useEffect(() => () => { if (copiedTimer.current) clearTimeout(copiedTimer.current); }, []);
 
     const submit = async (event: FormEvent) => {
         event.preventDefault();
         setBusy(true); setError('');
         try {
-            const response = await fetch(screen === 'create' ? '/api/rooms' : '/api/rooms/join', {
+            const endpoint = screen === 'create' ? '/api/rooms' : screen === 'recover' ? '/api/rooms/recover' : '/api/rooms/join';
+            const body = screen === 'recover' ? { recoveryKey: recoveryKeyInput } : { name, password, code };
+            const response = await fetch(endpoint, {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name, password, code }), signal: AbortSignal.timeout(10_000),
+                body: JSON.stringify(body), signal: AbortSignal.timeout(10_000),
             });
-            const result = await response.json();
+            const result = await response.json() as Session & { recoveryKey?: string; message?: string };
             if (!response.ok) throw new Error(result.message ?? 'Nao foi possivel entrar na sala.');
-            sessionStorage.setItem(storageKey, JSON.stringify(result));
-            localStorage.setItem('finance-gameinator.name', name.trim());
-            setSession(result); setRoom(result.room); navigate('room', result.room.code);
+            const recoveryKey = result.recoveryKey ?? (screen === 'recover' ? recoveryKeyInput.trim() : undefined);
+            const nextSession: Session = { token: result.token, playerId: result.playerId, room: result.room, recoveryReady: true, ...(recoveryKey ? { recoveryKey } : {}) };
+            sessionStorage.setItem(storageKey, JSON.stringify(nextSession));
+            if (screen !== 'recover') localStorage.setItem('finance-gameinator.name', name.trim());
+            setSession(nextSession); setRoom(result.room); navigate('room', result.room.code);
+            if (recoveryKey) setRecoveryKeyToSave({ key: recoveryKey, rotated: false });
         } catch (failure) {
             setError(failure instanceof Error && failure.name !== 'TimeoutError' && failure.name !== 'TypeError' ? translateServerError(locale, failure.message) : t('error.server'));
         } finally { setBusy(false); }
@@ -204,6 +235,47 @@ export function App() {
             if (copiedTimer.current) clearTimeout(copiedTimer.current);
             copiedTimer.current = setTimeout(() => setCopied(false), 2000);
         } catch { setError(`${t('error.copyCode')} ${room!.code}`); }
+    };
+
+    const rotateRecoveryKey = async () => {
+        if (!session) return;
+        setBusy(true); setError('');
+        try {
+            const response = await fetch('/api/rooms/recovery-key', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ code: session.room.code, token: session.token, rotate: true }),
+                signal: AbortSignal.timeout(10_000),
+            });
+            const result = await response.json() as { recoveryKey?: string; message?: string };
+            if (!response.ok || !result.recoveryKey) throw new Error(result.message ?? t('error.request'));
+            const rotatedSession = { ...session, recoveryReady: true, recoveryKey: result.recoveryKey };
+            sessionStorage.setItem(storageKey, JSON.stringify(rotatedSession));
+            setSession(rotatedSession);
+            setRecoveryKeyToSave({ key: result.recoveryKey, rotated: true });
+            setRecoveryKeyCopied(false);
+        } catch (failure) {
+            setError(failure instanceof Error && failure.name !== 'TimeoutError' && failure.name !== 'TypeError' ? translateServerError(locale, failure.message) : t('error.server'));
+        } finally { setBusy(false); }
+    };
+
+    const copyRecoveryKey = async () => {
+        if (!recoveryKeyToSave) return;
+        try {
+            await navigator.clipboard.writeText(recoveryKeyToSave.key);
+            setRecoveryKeyCopied(true);
+        } catch { setError(t('error.copyRecovery')); }
+    };
+
+    const dismissRecoveryKey = () => {
+        const savedSession = storedSession();
+        if (savedSession) {
+            delete savedSession.recoveryKey;
+            savedSession.recoveryReady = true;
+            sessionStorage.setItem(storageKey, JSON.stringify(savedSession));
+            setSession(savedSession);
+        }
+        setRecoveryKeyToSave(null);
+        setRecoveryKeyCopied(false);
     };
 
     const isOwner = room?.ownerId === session?.playerId;
@@ -278,6 +350,7 @@ export function App() {
             </button>
             <span className="header-note"><span className="small-dot" /> {session ? t('header.openTable') : t('header.tagline')}</span>
             <label className="language-picker"><span className="sr-only">{t('header.language')}</span><Languages size={16} aria-hidden="true" /><select aria-label={t('header.language')} value={locale} onChange={event => setLocale(event.target.value as Locale)}><option value="pt-BR">Português</option><option value="en">English</option></select><ChevronDown size={14} aria-hidden="true" /></label>
+            {session && <button className="icon-button" title={t('recovery.rotate')} aria-label={t('recovery.rotate')} disabled={busy} onClick={() => void rotateRecoveryKey()}><KeyRound size={19} /></button>}
             {session && <button className="icon-button" title="Sair da sala" aria-label="Sair da sala" onClick={() => setConfirmLeave(true)}><LogOut size={20} /></button>}
         </header>
 
@@ -293,24 +366,24 @@ export function App() {
                         <button className="button primary" onClick={() => navigate('create')}><Plus size={21} /> {t('home.create')} <ArrowRight size={19} className="button-end" /></button>
                         <button className="button secondary" onClick={() => navigate('join')}><DoorOpen size={21} /> {t('home.join')} <ArrowRight size={19} className="button-end" /></button>
                     </div>
+                    <button className="recovery-link" onClick={() => navigate('recover')}><KeyRound size={15} /> {t('home.recoverSaved')}</button>
                     <div className="table-note"><span className="mini-avatars"><span>A</span><span>B</span><span>C</span></span><span>{t('home.players')}<span className="note-separator"> / </span><span className="note-emphasis">{t('home.oneTable')}</span></span></div>
                 </div>
                 <div className="home-visual"><div className="visual-label"><span>{t('home.visualIndex')}</span><span>{t('home.goodLuck')} <ArrowDownToLine size={13} /></span></div><BoardScene label={t('home.boardAlt')} /><div className="visual-bottom"><span className="visual-chip"><Dice5 size={15} /> {t('home.startGame')}</span><span className="edition">{t('home.edition')}</span></div></div>
             </section>}
 
-            {(screen === 'create' || screen === 'join') && <section className="entry-layout">
-                <div className="entry-art"><div className="eyebrow">{screen === 'create' ? t('entry.createEyebrow') : t('entry.joinEyebrow')}</div><h2>{screen === 'create' ? t('entry.createTitle') : t('entry.joinTitle')}</h2><BoardScene label={t('home.boardAlt')} /></div>
+            {(screen === 'create' || screen === 'join' || screen === 'recover') && <section className="entry-layout">
+                <div className="entry-art"><div className="eyebrow">{screen === 'create' ? t('entry.createEyebrow') : screen === 'recover' ? t('entry.recoverEyebrow') : t('entry.joinEyebrow')}</div><h2>{screen === 'create' ? t('entry.createTitle') : screen === 'recover' ? t('entry.recoverTitle') : t('entry.joinTitle')}</h2><BoardScene label={t('home.boardAlt')} /></div>
                 <div className="entry-form">
                     <button className="back-button" onClick={() => navigate('home')}><ArrowLeft size={17} /> {t('entry.back')}</button>
-                    <div className="form-heading-icon">{screen === 'create' ? <Plus size={25} /> : <DoorOpen size={25} />}</div>
-                    <h1>{screen === 'create' ? t('entry.create') : t('entry.join')}</h1>
+                    <div className="form-heading-icon">{screen === 'create' ? <Plus size={25} /> : screen === 'recover' ? <KeyRound size={25} /> : <DoorOpen size={25} />}</div>
+                    <h1>{screen === 'create' ? t('entry.create') : screen === 'recover' ? t('entry.recover') : t('entry.join')}</h1>
                     <form onSubmit={submit}>
-                        <label htmlFor="player-name">{t('entry.playerName')}</label>
-                        <input id="player-name" autoFocus autoComplete="nickname" placeholder={t('entry.namePlaceholder')} value={name} onChange={event => setName(event.target.value)} minLength={2} maxLength={24} required disabled={busy} />
+                        {screen === 'recover' ? <><label htmlFor="saved-game-code">{t('entry.recoveryCode')}</label><input id="saved-game-code" className="code-input" autoFocus autoComplete="off" placeholder={t('entry.recoveryPlaceholder')} value={recoveryKeyInput} onChange={event => setRecoveryKeyInput(event.target.value.toUpperCase().replace(/[^A-Z0-9-]/g, ''))} maxLength={60} required disabled={busy} /><p className="recovery-help">{t('entry.recoveryHelp')}</p></> : <><label htmlFor="player-name">{t('entry.playerName')}</label><input id="player-name" autoFocus autoComplete="nickname" placeholder={t('entry.namePlaceholder')} value={name} onChange={event => setName(event.target.value)} minLength={2} maxLength={24} required disabled={busy} /></>}
                         {screen === 'join' && <><label htmlFor="room-code">{t('entry.roomCode')}</label><input id="room-code" className="code-input" placeholder={t('entry.codePlaceholder')} value={code} onChange={event => setCode(event.target.value.toUpperCase().replace(/[^A-Z2-9]/g, ''))} minLength={6} maxLength={6} autoComplete="off" autoCapitalize="characters" spellCheck={false} required disabled={busy} /></>}
-                        <label htmlFor="room-password">{t('entry.password')}</label>
-                        <div className="password-field"><LockKeyhole size={18} /><input id="room-password" type={showPassword ? 'text' : 'password'} autoComplete={screen === 'create' ? 'new-password' : 'current-password'} placeholder={screen === 'create' ? t('entry.createPassword') : t('entry.joinPassword')} value={password} onChange={event => setPassword(event.target.value)} minLength={4} maxLength={64} required disabled={busy} /><button type="button" className="icon-button" title={showPassword ? t('entry.hidePassword') : t('entry.showPassword')} aria-label={showPassword ? t('entry.hidePassword') : t('entry.showPassword')} onClick={() => setShowPassword(!showPassword)}>{showPassword ? <EyeOff size={18} /> : <Eye size={18} />}</button></div>
-                        <button className="button primary submit-button" disabled={busy} type="submit">{busy ? <LoaderCircle className="spin" size={20} /> : screen === 'create' ? <Plus size={20} /> : <DoorOpen size={20} />}{busy ? t('entry.wait') : screen === 'create' ? t('entry.create') : t('entry.join')}<ArrowRight size={19} className="button-end" /></button>
+                        {screen === 'join' && <p className="recovery-help">{t('entry.joinHelp')}</p>}
+                        {screen !== 'recover' && <><label htmlFor="room-password">{t('entry.password')}</label><div className="password-field"><LockKeyhole size={18} /><input id="room-password" type={showPassword ? 'text' : 'password'} autoComplete={screen === 'create' ? 'new-password' : 'current-password'} placeholder={screen === 'create' ? t('entry.createPassword') : t('entry.joinPassword')} value={password} onChange={event => setPassword(event.target.value)} minLength={4} maxLength={64} required disabled={busy} /><button type="button" className="icon-button" title={showPassword ? t('entry.hidePassword') : t('entry.showPassword')} aria-label={showPassword ? t('entry.hidePassword') : t('entry.showPassword')} onClick={() => setShowPassword(!showPassword)}>{showPassword ? <EyeOff size={18} /> : <Eye size={18} />}</button></div></>}
+                        <button className="button primary submit-button" disabled={busy} type="submit">{busy ? <LoaderCircle className="spin" size={20} /> : screen === 'create' ? <Plus size={20} /> : screen === 'recover' ? <KeyRound size={20} /> : <DoorOpen size={20} />}{busy ? t('entry.wait') : screen === 'create' ? t('entry.create') : screen === 'recover' ? t('entry.recover') : t('entry.join')}<ArrowRight size={19} className="button-end" /></button>
                     </form>
                 </div>
             </section>}
@@ -400,6 +473,7 @@ export function App() {
             </section>)}
         </main>
         <footer className="site-footer"><span>{t('footer.brand')}</span><span>{t('footer.line')}<span className="footer-dot" /></span></footer>
+        {recoveryKeyToSave && <div className="modal-backdrop"><section className="confirm-dialog recovery-dialog" role="dialog" aria-modal="true" aria-labelledby="recovery-title" onClick={event => event.stopPropagation()}><KeyRound size={27} /><h2 id="recovery-title">{t('recovery.title')}</h2><p>{recoveryKeyToSave.rotated ? t('recovery.rotated') : t('recovery.instructions')}</p><div className="recovery-key-display"><span>{t('entry.recoveryCode')}</span><code>{recoveryKeyToSave.key}</code></div><div className="dialog-actions"><button className="button secondary" onClick={() => void copyRecoveryKey()}><Copy size={17} />{recoveryKeyCopied ? t('recovery.copied') : t('recovery.copy')}</button><button className="button primary" onClick={dismissRecoveryKey}>{t('recovery.saved')}</button></div></section></div>}
         {confirmLeave && <div className="modal-backdrop" onClick={() => !busy && setConfirmLeave(false)}><section className="confirm-dialog" role="dialog" aria-modal="true" aria-labelledby="leave-title" onClick={event => event.stopPropagation()} onKeyDown={event => { if (event.key === 'Escape') setConfirmLeave(false); }}><LogOut size={27} /><h2 id="leave-title">{isOwner ? t('leave.title') : room?.status === 'started' ? t('leave.activeTitle') : t('leave.playerTitle')}</h2><p>{isOwner ? t('leave.ownerText') : room?.status === 'started' ? t('leave.activeText') : t('leave.playerText')}</p><div className="dialog-actions"><button className="button secondary" autoFocus disabled={busy} onClick={() => setConfirmLeave(false)}>{room?.status === 'started' && !isOwner ? t('leave.understood') : t('leave.cancel')}</button>{!(room?.status === 'started' && !isOwner) && <button className="button danger" disabled={busy} onClick={leave}>{busy ? <LoaderCircle size={18} className="spin" /> : <LogOut size={18} />}{isOwner ? t('leave.close') : t('leave.exit')}</button>}</div></section></div>}
     </div>;
 }
