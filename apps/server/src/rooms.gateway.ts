@@ -95,6 +95,9 @@ export class RoomsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @SubscribeMessage('game:sell-property')
     sellProperty(@ConnectedSocket() socket: Socket, @MessageBody() input: unknown) { return this.gameAction(socket, 'game:sell-property', input); }
 
+    @SubscribeMessage('game:mortgage-property')
+    mortgageProperty(@ConnectedSocket() socket: Socket, @MessageBody() input: unknown) { return this.gameAction(socket, 'game:mortgage-property', input); }
+
     @SubscribeMessage('game:sell-building')
     sellBuilding(@ConnectedSocket() socket: Socket, @MessageBody() input: unknown) { return this.gameAction(socket, 'game:sell-building', input); }
 

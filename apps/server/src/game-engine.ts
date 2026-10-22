@@ -92,6 +92,10 @@ export interface PropertyOffer {
     id: string; propertyId: string; buyerId: string; ownerId: string; amount: number;
 }
 
+export interface PropertyMortgage {
+    id: string; originalPrice: number; payout: number; interest: number; settlement: number;
+}
+
 export interface FixedIncomeInvestment {
     id: string; investorId: string; productId: string; productName: string; productNameEnglish: string; principal: number;
     rateBpsPerCycle: number; interestMethod: 'simple' | 'compound'; termCycles: number;
@@ -104,14 +108,14 @@ export interface GameState {
     boardId: string; status: 'playing' | 'finished'; players: GamePlayer[];
     currentPlayerId: string; winnerId: string | null;
     phase: 'awaitingRoll' | 'awaitingAction' | 'awaitingDebtResolution' | 'awaitingLoanResponse' | 'awaitingPropertyResponse' | 'finished';
-    propertyOwners: Record<string, string>; houses: Record<string, number>;
+    propertyOwners: Record<string, string>; houses: Record<string, number>; mortgages: Record<string, PropertyMortgage>;
     loans: Loan[]; investments: FixedIncomeInvestment[]; pendingAction: PendingAction | null; pendingLoan: LoanProposal | null; pendingOffer: PropertyOffer | null;
     pendingPayments: PendingPayment[]; pendingLandingPosition: number | null; offersThisTurn: number; builtThisTurn: boolean; startCrossings: Record<string, number>;
     lastRoll: [number, number] | null; log: string[]; events: GameEvent[];
     transactions: FinancialTransaction[]; transactionKeys: string[];
 }
 
-export type GameEventType = 'gameStarted' | 'turn' | 'roll' | 'move' | 'purchase' | 'rent' | 'tax' | 'bonus' | 'holiday' | 'jail' | 'jailEscape' | 'bail' | 'loan' | 'build' | 'sale' | 'repayment' | 'paymentDue' | 'propertyOffer' | 'propertyTransfer' | 'bankruptcy' | 'victory' | 'pass' | 'emergencyFundDeposit' | 'emergencyFundWithdrawal' | 'emergencyFundInterest' | 'investmentCreated' | 'investmentMatured' | 'investmentClaimed' | 'investmentEarlyWithdrawal' | 'goalCompleted' | 'qualityOfLifeChanged';
+export type GameEventType = 'gameStarted' | 'turn' | 'roll' | 'move' | 'purchase' | 'rent' | 'tax' | 'bonus' | 'holiday' | 'jail' | 'jailEscape' | 'bail' | 'loan' | 'build' | 'sale' | 'repayment' | 'paymentDue' | 'propertyOffer' | 'propertyTransfer' | 'bankruptcy' | 'victory' | 'pass' | 'emergencyFundDeposit' | 'emergencyFundWithdrawal' | 'emergencyFundInterest' | 'investmentCreated' | 'investmentMatured' | 'investmentClaimed' | 'investmentEarlyWithdrawal' | 'goalCompleted' | 'qualityOfLifeChanged' | 'mortgage' | 'mortgageSettlement';
 export interface GameEvent { id: string; sequence: number; type: GameEventType; playerId: string | null; message: string; details: Record<string, string | number | boolean | null>; }
 export interface FinancialTransaction { id: string; type: GameEventType; from: string | 'bank'; to: string | 'bank'; amount: number; description: string; details?: Record<string, string | number | boolean | null>; }
 
@@ -230,7 +234,7 @@ export function startGame(board: BoardDefinition, players: { id: string; name: s
     const start = board.spaces.findIndex(space => space.type === 'start');
     const state: GameState = {
         boardId: board.id, status: 'playing', players: players.map(player => ({ id: player.id, name: player.name, color: player.color, position: start, balance: board.startingBalance, jailed: false, jailAttempts: 0, currentJailFee: board.jailFee, skipTurns: 0, active: true, loanAvailableThisCycle: true, emergencyFundBalance: 0, emergencyFundInterestPrevious: 0, emergencyFundInterestTotal: 0, emergencyFundLastProcessedCycle: 0, qualityOfLife: { happiness: 55, financialSecurity: 60, wellBeing: 55, personalDevelopment: 40, socialLife: 50 }, leisureEventCount: 0, completedGoals: [], qualityOfLifeProcessedEventSequence: 0 })),
-        currentPlayerId: players[0].id, winnerId: null, phase: 'awaitingRoll', propertyOwners: {}, houses: {}, loans: [], investments: [], pendingAction: null, pendingLoan: null, pendingOffer: null, pendingPayments: [], pendingLandingPosition: null, offersThisTurn: 0, builtThisTurn: false, startCrossings: {}, lastRoll: null, log: [], events: [], transactions: [], transactionKeys: [],
+        currentPlayerId: players[0].id, winnerId: null, phase: 'awaitingRoll', propertyOwners: {}, houses: {}, mortgages: {}, loans: [], investments: [], pendingAction: null, pendingLoan: null, pendingOffer: null, pendingPayments: [], pendingLandingPosition: null, offersThisTurn: 0, builtThisTurn: false, startCrossings: {}, lastRoll: null, log: [], events: [], transactions: [], transactionKeys: [],
     };
     recordEvent(state, 'gameStarted', players[0].id, `${players[0].name} inicia uma partida em ${board.name}.`, { boardId: board.id, playerCount: players.length });
     recordEvent(state, 'turn', players[0].id, `A vez de ${players[0].name}.`);
@@ -648,7 +652,7 @@ function resolvePropertyLanding(state: GameState, board: BoardDefinition, player
     const ownerId = state.propertyOwners[propertyId];
     const property = board.properties.find(value => value.id === propertyId)!;
     if (!ownerId) { state.phase = 'awaitingAction'; state.pendingAction = { type: 'buy', playerId: player.id, propertyId, amount: property.price }; return state; }
-    if (ownerId === player.id) return advanceAfterLanding(state, player);
+    if (ownerId === player.id || state.mortgages[propertyId]) return advanceAfterLanding(state, player);
     const rent = property.rentSchedule[state.houses[propertyId] ?? 0];
     queuePayment(state, { id: randomUUID(), type: 'rent', playerId: player.id, recipientId: ownerId, amount: rent, propertyId, description: `${player.name} deve ${rent} de aluguel a ${state.players.find(candidate => candidate.id === ownerId)!.name} por ${property.name}.` });
     return state;
@@ -756,6 +760,7 @@ export function sendPropertyOffer(state: GameState, board: BoardDefinition, buye
     const buyer = state.players.find(player => player.id === buyerId && player.active);
     if (!owner || !buyer || owner.id === buyerId) throw new Error('Este imovel nao pertence a outro jogador ativo.');
     if (!Number.isSafeInteger(amount) || amount <= 0 || amount > buyer.balance) throw new Error('A oferta deve ser positiva e caber no seu saldo disponivel.');
+    propertySalePreview(state, board, propertyId, amount);
     state.pendingOffer = { id: randomUUID(), propertyId, buyerId, ownerId, amount };
     state.offersThisTurn++;
     state.phase = 'awaitingPropertyResponse';
@@ -763,16 +768,33 @@ export function sendPropertyOffer(state: GameState, board: BoardDefinition, buye
     return state;
 }
 
-export function respondPropertyOffer(state: GameState, ownerId: string, accept: boolean, board: BoardDefinition): GameState {
+export function respondPropertyOffer(state: GameState, ownerId: string, accept: boolean, board: BoardDefinition, offerId?: string): GameState {
     const offer = state.pendingOffer;
     if (state.status !== 'playing' || state.phase !== 'awaitingPropertyResponse' || !offer || offer.ownerId !== ownerId) throw new Error('Nao ha oferta de imovel para este jogador.');
+    if (offerId !== undefined && offerId !== offer.id) throw new Error('Oferta de imovel desatualizada.');
     const property = board.properties.find(candidate => candidate.id === offer.propertyId);
     const buyer = state.players.find(player => player.id === offer.buyerId && player.active);
     if (!property || state.propertyOwners[offer.propertyId] !== ownerId || !buyer) throw new Error('A propriedade ou um dos jogadores nao esta mais disponivel.');
+    if (state.mortgages[offer.propertyId] && offerId !== offer.id) throw new Error('Confirme o identificador da oferta de imovel hipotecado.');
     if (!accept) {
         state.pendingOffer = null;
         state.phase = 'awaitingAction';
         recordEvent(state, 'propertyOffer', ownerId, `${state.players.find(player => player.id === ownerId)!.name} recusou a oferta por ${property.name}.`, { offerId: offer.id, propertyId: property.id, buyerId: buyer.id, amount: offer.amount, accepted: false });
+        return state;
+    }
+    const mortgage = state.mortgages[offer.propertyId];
+    if (mortgage) {
+        const preview = propertySalePreview(state, board, offer.propertyId, offer.amount);
+        const draft = structuredClone(state);
+        if (buyer.balance < offer.amount) throw new Error('Saldo insuficiente para a transacao.');
+        if (!applyTransaction(draft, 'mortgageSettlement', buyer.id, 'bank', preview.settlement, `Quitacao da hipoteca de ${property.name}: ${preview.settlement}.`, `${offer.id}:mortgage`, { propertyId: property.id, originalPrice: mortgage.originalPrice, payout: mortgage.payout, interest: mortgage.interest })) throw new Error('Quitacao de hipoteca ja processada.');
+        if (!applyTransaction(draft, 'propertyTransfer', buyer.id, ownerId, preview.sellerProceeds, `${buyer.name} compra ${property.name} por ${offer.amount}; vendedor recebe ${preview.sellerProceeds}.`, offer.id, { propertyId: property.id, negotiatedPrice: offer.amount, settlement: preview.settlement })) throw new Error('Oferta de imovel ja processada.');
+        draft.propertyOwners[property.id] = buyer.id;
+        delete draft.mortgages[property.id];
+        draft.pendingOffer = null;
+        draft.phase = 'awaitingAction';
+        recordEvent(draft, 'propertyTransfer', buyer.id, `${property.name} muda de proprietario sem hipoteca.`, { propertyId: property.id, previousOwnerId: ownerId, ownerId: buyer.id, amount: offer.amount, settlement: preview.settlement, sellerProceeds: preview.sellerProceeds, houses: 0 });
+        Object.assign(state, draft);
         return state;
     }
     applyTransaction(state, 'propertyTransfer', buyer.id, ownerId, offer.amount, `${buyer.name} compra ${property.name} de ${state.players.find(player => player.id === ownerId)!.name} por ${offer.amount}.`, offer.id);
@@ -925,6 +947,7 @@ export function buildProperty(state: GameState, board: BoardDefinition, actorId:
     const property = board.properties.find(candidate => candidate.id === propertyId);
     if (!property) throw new Error('Imovel invalido.');
     const propertySpace = board.spaces.findIndex(space => space.type === 'property' && space.propertyId === propertyId);
+    if (state.mortgages[propertyId]) throw new Error('Nao e possivel construir em um imovel hipotecado.');
     if (propertySpace < 0 || state.players.find(player => player.id === actorId)!.position !== propertySpace) throw new Error('Voce precisa estar neste imovel para construir.');
     const currentLevel = state.houses[propertyId] ?? 0;
     const group = ownedColorGroup(board, property);
@@ -968,16 +991,62 @@ export function sellBuilding(state: GameState, board: BoardDefinition, actorId: 
     return state;
 }
 
+export function propertyMortgageTerms(originalPrice: number) {
+    const payout = Number(BigInt(originalPrice) / 2n);
+    const interest = roundedBasisPointAmount(payout, 2000);
+    return { originalPrice, payout, interest, settlement: addSafeMoney(payout, interest) };
+}
+
+export function propertySalePreview(state: GameState, board: BoardDefinition, propertyId: string, amount: number) {
+    const property = board.properties.find(candidate => candidate.id === propertyId);
+    if (!property || !Number.isSafeInteger(amount) || amount <= 0) throw new Error('Preco de venda invalido.');
+    const mortgage = state.mortgages[propertyId];
+    const terms = mortgage ?? { originalPrice: property.price, payout: 0, interest: 0, settlement: 0 };
+    if (amount < terms.settlement) throw new Error('O preco negociado deve cobrir a quitacao da hipoteca.');
+    return { ...terms, negotiatedPrice: amount, sellerProceeds: amount - terms.settlement, mortgaged: Boolean(mortgage) };
+}
+
+export function mortgageProperty(state: GameState, board: BoardDefinition, actorId: string, propertyId: string, operationId: string): GameState {
+    const key = `mortgage:${actorId}:${operationId}`;
+    if (typeof operationId !== 'string' || operationId.length < 1 || operationId.length > 100) throw new Error('Identificador de operacao invalido.');
+    if (state.transactionKeys.includes(key)) return state;
+    if (state.status !== 'playing' || state.currentPlayerId !== actorId || !['awaitingAction', 'awaitingDebtResolution'].includes(state.phase) || state.pendingLoan || state.pendingOffer || (state.pendingAction && state.phase !== 'awaitingDebtResolution')) throw new Error('Resolva as acoes pendentes antes de hipotecar.');
+    const player = requireActivePlayer(state, actorId);
+    const property = board.properties.find(candidate => candidate.id === propertyId);
+    if (!property || state.propertyOwners[propertyId] !== actorId) throw new Error('Voce nao e o proprietario deste imovel.');
+    if ((state.houses[propertyId] ?? 0) > 0) throw new Error('Venda os edificios antes de hipotecar o imovel.');
+    if (state.mortgages[propertyId]) throw new Error('Este imovel ja esta hipotecado.');
+    const terms = propertyMortgageTerms(property.price);
+    applyTransaction(state, 'mortgage', 'bank', actorId, terms.payout, `${player.name} hipoteca ${property.name} por ${terms.payout}.`, key, { propertyId, ...terms });
+    state.mortgages[propertyId] = { id: operationId, ...terms };
+    return state;
+}
+
+export function bankPropertySaleTerms(state: GameState, board: BoardDefinition, propertyId: string) {
+    const property = board.properties.find(candidate => candidate.id === propertyId);
+    if (!property) throw new Error('Imovel invalido.');
+    const mortgage = state.mortgages[propertyId];
+    const originalPrice = mortgage?.originalPrice ?? property.price;
+    const bankSalePrice = Number(BigInt(originalPrice) * 3n / 4n);
+    const bankSaleNet = bankSalePrice - (mortgage?.settlement ?? 0);
+    if (bankSaleNet < 0) throw new Error('O valor de venda ao banco nao cobre a quitacao da hipoteca.');
+    return { bankSalePrice, bankSaleNet };
+}
+
 export function sellProperty(state: GameState, board: BoardDefinition, actorId: string, propertyId: string): GameState {
     if (state.status !== 'playing' || state.currentPlayerId !== actorId || !['awaitingAction', 'awaitingDebtResolution'].includes(state.phase)) throw new Error('Role os dados antes de vender um imovel.');
     if (state.propertyOwners[propertyId] !== actorId) throw new Error('Voce nao e o proprietario deste imovel.');
     const property = board.properties.find(candidate => candidate.id === propertyId);
     if (!property) throw new Error('Imovel invalido.');
     if ((state.houses[propertyId] ?? 0) > 0) throw new Error('Venda os edificios deste imovel antes de vende-lo ao banco.');
-    const price = Math.floor(property.price / 2);
-    applyTransaction(state, 'sale', 'bank', actorId, price, `${state.players.find(player => player.id === actorId)!.name} vende ${property.name} ao banco por ${price}.`);
+    if (ownedColorGroup(board, property).some(candidate => (state.houses[candidate.id] ?? 0) > 0)) throw new Error('Venda os edificios do grupo antes de vender o imovel ao banco.');
+    const mortgage = state.mortgages[propertyId];
+    const { bankSalePrice, bankSaleNet } = bankPropertySaleTerms(state, board, propertyId);
+    const description = `${state.players.find(player => player.id === actorId)!.name} vende ${property.name} ao banco por ${bankSalePrice}; recebe ${bankSaleNet} apos quitacao de ${mortgage?.settlement ?? 0}.`;
+    if (!applyTransaction(state, 'sale', 'bank', actorId, bankSaleNet, description, mortgage ? `mortgage-bank-sale:${actorId}:${mortgage.id}` : randomUUID(), { propertyId, bankSalePrice, mortgagePayout: mortgage?.payout ?? 0, mortgageInterest: mortgage?.interest ?? 0, mortgageSettlement: mortgage?.settlement ?? 0, bankSaleNet })) throw new Error('Venda ao banco ja processada.');
     delete state.propertyOwners[propertyId];
     delete state.houses[propertyId];
+    delete state.mortgages[propertyId];
     return state;
 }
 
@@ -1016,6 +1085,7 @@ export function declareBankruptcy(state: GameState, board: BoardDefinition, acto
             }
         } else {
             delete state.propertyOwners[propertyId];
+            delete state.mortgages[propertyId];
             recordEvent(state, 'bankruptcy', actorId, `${board.properties.find(property => property.id === propertyId)?.name ?? propertyId} retorna ao banco.`, { propertyId });
         }
         delete state.houses[propertyId];

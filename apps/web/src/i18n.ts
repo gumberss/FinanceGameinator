@@ -4,6 +4,10 @@ type Values = Record<string, string | number | boolean>;
 
 const messages = {
   'pt-BR': {
+    'mortgage.bankGross': 'Venda bruta ao banco (75%)', 'mortgage.bankNet': 'Voce recebe agora', 'mortgage.bankConfirm': 'Confirmar venda ao banco', 'mortgage.bankRule': 'O banco desconta a hipoteca ja recebida e os juros do valor de venda de 75%. Voce recebe apenas o restante; a propriedade volta ao banco sem hipoteca.', 'mortgage.updatedWarning': 'Sem renda de aluguel enquanto hipotecado. Ao vender, a hipoteca e os juros sao descontados do preco da venda.', 'mortgage.bankEvent': '{player} vendeu ao banco: valor bruto {gross}, quitacao {settlement}, liquido recebido {net}.',
+    'transaction.mortgage': '{to} recebeu {amount} pela hipoteca.', 'transaction.mortgageSettlement': '{from} pagou {amount} ao banco para quitar a hipoteca.', 'event.mortgageTransfer': '{property}: preco {price}, banco {settlement}, vendedor {proceeds}.', 'error.mortgage': 'Hipoteca indisponivel: confira propriedade, edificios, acoes pendentes e valor de quitacao.',
+    'mortgage.action': 'Hipotecar imovel', 'mortgage.status': 'Hipotecado', 'mortgage.original': 'Preco original', 'mortgage.payout': 'Valor da hipoteca', 'mortgage.interest': 'Juros da hipoteca (20%)', 'mortgage.settlement': 'Quitacao ao banco', 'mortgage.proceeds': 'Liquido do vendedor', 'mortgage.price': 'Preco negociado', 'mortgage.warning': 'Sem renda de aluguel enquanto hipotecado. Venda direta ao banco indisponivel; venda a outro jogador exige quitacao integral.', 'mortgage.clear': 'O comprador recebe o imovel sem hipoteca.', 'mortgage.confirm': 'Confirmar hipoteca', 'mortgage.offer': 'Confirmar oferta', 'mortgage.preview': 'Resumo da transacao', 'mortgage.zeroRent': 'Aluguel enquanto hipotecado: zero', 'mortgage.loading': 'Calculando valores...', 'mortgage.invalid': 'Nao foi possivel calcular. Confira o valor e tente novamente.', 'mortgage.netRule': 'Liquido do vendedor = preco negociado - quitacao ao banco.',
+    'event.mortgage': '{player} hipotecou {property} e recebeu {amount}.', 'event.mortgageSettlement': 'Quitacao da hipoteca de {property}: {amount} ao banco.',
     'header.tagline': 'BONS NEGOCIOS. BOAS COMPANHIAS.', 'header.openTable': 'MESA ABERTA', 'header.language': 'Idioma', 'header.home': 'FinanceGameinator, inicio',
     'home.eyebrow': 'AMIGOS NA MESA', 'home.tagline': 'Sua mesa. Seus amigos.\\nUma nova partida.', 'home.create': 'Criar sala', 'home.join': 'Entrar na sala', 'home.recoverSaved': 'Continuar jogo salvo', 'home.players': 'De 2 a 8 jogadores', 'home.oneTable': 'uma mesa',
     'home.visualIndex': '01 / A MESA', 'home.goodLuck': 'BOA SORTE', 'home.startGame': 'QUE COMECE O JOGO', 'home.edition': 'EDICAO ENTRE AMIGOS', 'home.boardAlt': 'Tabuleiro FinanceGameinator com propriedades, dados e pecas',
@@ -41,6 +45,10 @@ const messages = {
     'footer.brand': 'FINANCEGAMEINATOR', 'footer.line': 'O melhor investimento e o tempo juntos.', 'generic.loadingBoard': 'CARREGANDO TABULEIRO...', 'generic.room': 'MESA ABERTA', 'generic.homeTag': 'BONS NEGOCIOS. BOAS COMPANHIAS.',
   },
   en: {
+    'mortgage.bankGross': 'Gross bank sale (75%)', 'mortgage.bankNet': 'You receive now', 'mortgage.bankConfirm': 'Confirm bank sale', 'mortgage.bankRule': 'The bank deducts the mortgage payout already received and its interest from the 75% sale value. You receive only the remainder; the property returns to the bank mortgage-free.', 'mortgage.updatedWarning': 'No rental income while mortgaged. On sale, the mortgage and interest are deducted from the sale price.', 'mortgage.bankEvent': '{player} sold to the bank: gross {gross}, settlement {settlement}, net received {net}.',
+    'transaction.mortgage': '{to} received {amount} from a mortgage.', 'transaction.mortgageSettlement': '{from} paid {amount} to the bank to settle the mortgage.', 'event.mortgageTransfer': '{property}: price {price}, bank {settlement}, seller {proceeds}.', 'error.mortgage': 'Mortgage unavailable: check ownership, buildings, pending actions, and settlement amount.',
+    'mortgage.action': 'Mortgage property', 'mortgage.status': 'Mortgaged', 'mortgage.original': 'Original price', 'mortgage.payout': 'Mortgage payout', 'mortgage.interest': 'Mortgage interest (20%)', 'mortgage.settlement': 'Bank settlement', 'mortgage.proceeds': 'Seller net proceeds', 'mortgage.price': 'Negotiated price', 'mortgage.warning': 'No rental income while mortgaged. Direct bank sale unavailable; selling to another player requires full settlement.', 'mortgage.clear': 'The buyer receives the property mortgage-free.', 'mortgage.confirm': 'Confirm mortgage', 'mortgage.offer': 'Confirm offer', 'mortgage.preview': 'Transaction breakdown', 'mortgage.zeroRent': 'Rent while mortgaged: zero', 'mortgage.loading': 'Calculating amounts...', 'mortgage.invalid': 'Unable to calculate. Check the amount and try again.', 'mortgage.netRule': 'Seller net proceeds = negotiated price - bank settlement.',
+    'event.mortgage': '{player} mortgaged {property} and received {amount}.', 'event.mortgageSettlement': 'Mortgage settlement for {property}: {amount} to the bank.',
     'header.tagline': 'GOOD BUSINESS. BETTER COMPANY.', 'header.openTable': 'TABLE OPEN', 'header.language': 'Language', 'header.home': 'FinanceGameinator, home',
     'home.eyebrow': 'FRIENDS AT THE TABLE', 'home.tagline': 'Your table. Your friends.\\nA new game.', 'home.create': 'Create room', 'home.join': 'Join room', 'home.recoverSaved': 'Resume saved game', 'home.players': '2 to 8 players', 'home.oneTable': 'one table',
     'home.visualIndex': '01 / THE TABLE', 'home.goodLuck': 'GOOD LUCK', 'home.startGame': 'LET THE GAME BEGIN', 'home.edition': 'FRIENDS EDITION', 'home.boardAlt': 'FinanceGameinator board with properties, dice, and game pieces',
@@ -88,6 +96,7 @@ export function translate(locale: Locale, key: MessageKey, values: Values = {}) 
 export function translateServerError(locale: Locale, message: string) {
   if (locale === 'pt-BR') return message;
   const matches: [RegExp, MessageKey][] = [
+    [/hipotec|hipoteca/i, 'error.mortgage'],
     [/sala nao encontrada/i, 'error.savedRoomMissing'],
     [/ha varios jogadores com esse nome/i, 'error.ambiguousSeat'],
     [/partida ja comecou/i, 'error.gameStarted'],
@@ -107,6 +116,7 @@ export function translateServerError(locale: Locale, message: string) {
 }
 
 export function translateGameEvent(locale: Locale, event: { type: string; playerId: string | null; details: Record<string, string | number | boolean | null>; message: string }, names: Record<string, string>, properties: Record<string, string>, boards: Record<string, string>, formatMoney: (amount: number) => string) {
+  if (event.type === 'sale' && typeof event.details.bankSaleNet === 'number') return translate(locale, 'mortgage.bankEvent', { player: names[event.playerId ?? ''] ?? '', gross: formatMoney(Number(event.details.bankSalePrice)), settlement: formatMoney(Number(event.details.mortgageSettlement)), net: formatMoney(event.details.bankSaleNet) });
   const goalKeys: Record<string, MessageKey> = {
     'emergency-fund': 'qol.goal.emergencyFund', 'financial-security': 'qol.goal.financialSecurity', 'reduce-debt': 'qol.goal.reduceDebt',
     'start-investing': 'qol.goal.startInvesting', 'own-property': 'qol.goal.ownProperty', 'enjoy-life': 'qol.goal.enjoyLife',
@@ -127,7 +137,10 @@ export function translateGameEvent(locale: Locale, event: { type: string; player
   const player = (id: unknown) => typeof id === 'string' ? names[id] ?? 'Player' : 'Player';
   const property = (id: unknown) => typeof id === 'string' ? properties[id] ?? id : 'property';
   const amount = (value: unknown) => formatMoney(typeof value === 'number' ? value : 0);
+  if (event.type === 'propertyTransfer' && typeof details.settlement === 'number' && typeof details.sellerProceeds === 'number') return translate(locale, 'event.mortgageTransfer', { property: property(details.propertyId), price: amount(details.amount), settlement: amount(details.settlement), proceeds: amount(details.sellerProceeds) });
   switch (event.type) {
+    case 'mortgage': return translate(locale, 'event.mortgage', { player: player(event.playerId), property: property(details.propertyId), amount: amount(details.amount) });
+    case 'mortgageSettlement': return translate(locale, 'event.mortgageSettlement', { property: property(details.propertyId), amount: amount(details.amount) });
     case 'gameStarted': return translate(locale, 'event.started', { player: player(event.playerId), board: typeof details.boardId === 'string' ? boards[details.boardId] ?? details.boardId : 'board' });
     case 'turn': return translate(locale, 'event.turn', { player: player(event.playerId) });
     case 'roll': return translate(locale, 'event.roll', { player: player(event.playerId), dieOne: details.dieOne ?? '?', dieTwo: details.dieTwo ?? '?' });
@@ -154,8 +167,10 @@ export function translateGameEvent(locale: Locale, event: { type: string; player
 }
 
 export function translateTransaction(locale: Locale, transaction: { type: string; from: string; to: string; amount: number; description: string; details?: Record<string, string | number | boolean | null> }, names: Record<string, string>, formatMoney: (amount: number) => string) {
+  if (transaction.type === 'sale' && typeof transaction.details?.bankSaleNet === 'number') return translate(locale, 'mortgage.bankEvent', { player: names[transaction.to] ?? '', gross: formatMoney(Number(transaction.details.bankSalePrice)), settlement: formatMoney(Number(transaction.details.mortgageSettlement)), net: formatMoney(transaction.details.bankSaleNet) });
   if (locale === 'pt-BR') return transaction.description;
   const keys: Record<string, MessageKey> = {
+    mortgage: 'transaction.mortgage', mortgageSettlement: 'transaction.mortgageSettlement',
     loan: 'transaction.loan', repayment: 'transaction.repayment', rent: 'transaction.rent', tax: 'transaction.tax', bonus: 'transaction.bonus',
     purchase: 'transaction.purchase', sale: 'transaction.sale', build: 'transaction.build', bail: 'transaction.bail', propertyTransfer: 'transaction.propertyTransfer',
     emergencyFundDeposit: 'transaction.emergencyFundDeposit', emergencyFundWithdrawal: 'transaction.emergencyFundWithdrawal', emergencyFundInterest: 'transaction.emergencyFundInterest',

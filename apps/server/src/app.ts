@@ -8,12 +8,31 @@ import { BoardsService } from './boards.service';
 import { RoomsService } from './rooms.service';
 import { RoomsGateway } from './rooms.gateway';
 import { calculateBankInterestRate, calculateFixedIncomeTerms, calculateLoanTerms } from './game-engine';
+import { bankPropertySaleTerms, propertyMortgageTerms, propertySalePreview } from './game-engine';
 
 @Controller('api')
 class RoomsController {
     constructor(@Inject(RoomsService) private readonly rooms: RoomsService, @Inject(RoomsGateway) private readonly gateway: RoomsGateway, @Inject(BoardsService) private readonly boards: BoardsService) { }
 
     @Get('health') health() { return { status: 'ok' }; }
+    @Post('rooms/property-terms') propertyTerms(@Body() input: unknown, @Req() request: { ip: string }) {
+        this.rooms.limit(`http:${request.ip}`);
+        const values = input && typeof input === 'object' ? input as Record<string, unknown> : {};
+        const identity = this.rooms.authenticate(values.code, values.token);
+        const game = this.rooms.view(identity.code).game;
+        if (!game) throw new BadRequestException('A partida ainda nao comecou.');
+        const board = this.boards.get(game.boardId);
+        const property = board.properties.find(candidate => candidate.id === values.propertyId);
+        if (!property) throw new BadRequestException('Imovel invalido.');
+        try {
+            return {
+                ...(game.mortgages[property.id] ?? propertyMortgageTerms(property.price)),
+                mortgaged: Boolean(game.mortgages[property.id]),
+                ...bankPropertySaleTerms(game, board, property.id),
+                ...(values.amount !== undefined ? propertySalePreview(game, board, property.id, values.amount as number) : {}),
+            };
+        } catch (error) { throw new BadRequestException(error instanceof Error ? error.message : 'Preco invalido.'); }
+    }
     @Get('boards') listBoards() { return this.boards.list(); }
     @Get('boards/:id') getBoard(@Param('id') id: string) { return this.boards.get(id); }
 

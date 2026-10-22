@@ -2,10 +2,117 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
+import { bankPropertySaleTerms, mortgageProperty, propertyMortgageTerms, propertySalePreview } from '../src/game-engine';
 import { acceptPlayerLoan, applyTransaction, buildProperty, buyProperty, calculateBankInterestRate, calculateEarlyWithdrawalTerms, calculateFixedIncomeTerms, cancelPlayerLoanRequest, calculateLoanTerms, claimFixedIncomeInvestment, createFixedIncomeInvestment, declineBail, declareBankruptcy, depositEmergencyFund, finishTurn, GameState, getPersonalGoalProgress, payBail, repayLoan, requestPlayerLoan, respondPlayerLoan, respondPropertyOffer, resolveRent, roll, sellBuilding, sellProperty, sendPropertyOffer, startGame, takeBankLoan, TOKEN_COLORS, updateQualityOfLife, validateBoard, withdrawEmergencyFund, withdrawFixedIncomeEarly } from '../src/game-engine';
 
 const board = validateBoard(JSON.parse(readFileSync(resolve(__dirname, '../boards/classic.json'), 'utf8')));
 const players = [{ id: 'one', name: 'Ana', online: true, color: TOKEN_COLORS[0] }, { id: 'two', name: 'Bia', online: true, color: TOKEN_COLORS[1] }];
+
+test('mortgage eligibility, original terms, and retry protection', () => {
+    const state = startGame(board, players);
+    state.phase = 'awaitingAction';
+    state.propertyOwners.paulista = 'one';
+    const before = state.players[0].balance;
+    mortgageProperty(state, board, 'one', 'paulista', 'first');
+    assert.equal(state.players[0].balance, before + 40000);
+    assert.equal(state.propertyOwners.paulista, 'one');
+    assert.deepEqual(state.mortgages.paulista, { id: 'first', originalPrice: 80000, payout: 40000, interest: 8000, settlement: 48000 });
+    const once = structuredClone(state);
+    mortgageProperty(state, board, 'one', 'paulista', 'first');
+    assert.deepEqual(state, once);
+    assert.throws(() => mortgageProperty(state, board, 'one', 'paulista', 'second'), /ja esta/);
+    assert.throws(() => mortgageProperty(state, board, 'two', 'paulista', 'other'), /pendentes/);
+    const bankSale = structuredClone(state);
+    sellProperty(bankSale, board, 'one', 'paulista');
+    assert.equal(bankSale.players[0].balance, once.players[0].balance + 12000);
+    assert.equal(bankSale.mortgages.paulista, undefined);
+    for (const level of [1, 5]) {
+        const developed = startGame(board, players);
+        developed.phase = 'awaitingAction'; developed.propertyOwners.paulista = 'one'; developed.houses.paulista = level;
+        const unchanged = structuredClone(developed);
+        assert.throws(() => mortgageProperty(developed, board, 'one', 'paulista', `level-${level}`), /edificios/);
+        assert.deepEqual(developed, unchanged);
+    }
+    const unowned = startGame(board, players);
+    unowned.phase = 'awaitingAction'; unowned.propertyOwners.paulista = 'two';
+    assert.throws(() => mortgageProperty(unowned, board, 'one', 'paulista', 'unowned'), /proprietario/);
+});
+
+test('mortgaged landing has no rent and construction is blocked', () => {
+    const state = startGame(board, players);
+    state.phase = 'awaitingAction'; state.propertyOwners.paulista = 'one';
+    mortgageProperty(state, board, 'one', 'paulista', 'rent');
+    state.players[0].position = 1;
+    assert.throws(() => buildProperty(state, board, 'one', 'paulista', 'house'), /hipotecado/);
+    state.currentPlayerId = 'two'; state.phase = 'awaitingRoll'; state.players[1].position = board.spaces.length - 1;
+    roll(state, board, 'two', [1, 1]);
+    assert.equal(state.pendingPayments.length, 0);
+    assert.equal(state.pendingAction, null);
+});
+
+test('mortgage negotiated sales settle the bank first without capping seller proceeds', () => {
+    const saleBoard = structuredClone(board);
+    saleBoard.properties.find(property => property.id === 'paulista')!.price = 50000;
+    assert.deepEqual(propertyMortgageTerms(50000), { originalPrice: 50000, payout: 25000, interest: 5000, settlement: 30000 });
+    for (const price of [30000, 100000, 300000]) {
+        const state = startGame(saleBoard, players);
+        state.phase = 'awaitingAction'; state.propertyOwners.paulista = 'one';
+        mortgageProperty(state, saleBoard, 'one', 'paulista', 'sale');
+        saleBoard.properties.find(property => property.id === 'paulista')!.price = 90000;
+        const sellerBefore = state.players[0].balance;
+        state.currentPlayerId = 'two';
+        assert.equal(propertySalePreview(state, saleBoard, 'paulista', price).settlement, 30000);
+        sendPropertyOffer(state, saleBoard, 'two', 'paulista', price);
+        const offerId = state.pendingOffer!.id;
+        respondPropertyOffer(state, 'one', true, saleBoard, offerId);
+        assert.equal(state.players[0].balance, sellerBefore + price - 30000);
+        assert.equal(state.players[1].balance, saleBoard.startingBalance - price);
+        assert.equal(state.transactions.find(transaction => transaction.type === 'mortgageSettlement')?.amount, 30000);
+        assert.equal(state.propertyOwners.paulista, 'two');
+        assert.equal(state.mortgages.paulista, undefined);
+        const completed = structuredClone(state);
+        assert.throws(() => respondPropertyOffer(state, 'one', true, saleBoard, offerId));
+        assert.deepEqual(state, completed);
+        state.currentPlayerId = 'one'; state.phase = 'awaitingRoll'; state.players[0].position = saleBoard.spaces.length - 1;
+        roll(state, saleBoard, 'one', [1, 1]);
+        assert.equal(state.pendingPayments[0]?.type, 'rent');
+        assert.equal(state.pendingPayments[0]?.recipientId, 'two');
+        saleBoard.properties.find(property => property.id === 'paulista')!.price = 50000;
+    }
+});
+
+test('failed mortgage settlements preserve balances, ownership, and mortgage', () => {
+    const state = startGame(board, players);
+    state.phase = 'awaitingAction'; state.propertyOwners.paulista = 'one';
+    mortgageProperty(state, board, 'one', 'paulista', 'atomic');
+    state.currentPlayerId = 'two';
+    const before = structuredClone(state);
+    assert.throws(() => sendPropertyOffer(state, board, 'two', 'paulista', 47999), /quitacao/);
+    assert.deepEqual(state, before);
+    sendPropertyOffer(state, board, 'two', 'paulista', 100000);
+    state.players[0].balance = Number.MAX_SAFE_INTEGER;
+    const overflow = structuredClone(state);
+    assert.throws(() => respondPropertyOffer(state, 'one', true, board, state.pendingOffer!.id), /limite/);
+    assert.deepEqual(state, overflow);
+    state.players[0].balance = 0; state.players[1].balance = 99999;
+    const insufficient = structuredClone(state);
+    assert.throws(() => respondPropertyOffer(state, 'one', true, board, state.pendingOffer!.id), /insuficiente/);
+    assert.deepEqual(state, insufficient);
+});
+
+test('mortgage cash can resolve a mandatory payment without auto-paying it', () => {
+    const state = startGame(board, players);
+    state.propertyOwners.paulista = 'one'; state.players[0].balance = 0;
+    state.players[0].position = 1;
+    roll(state, board, 'one', [1, 2]);
+    const payment = structuredClone(state.pendingPayments[0]);
+    assert.equal(payment.type, 'tax');
+    mortgageProperty(state, board, 'one', 'paulista', 'tax-funding');
+    assert.deepEqual(state.pendingPayments[0], payment);
+    assert.equal(state.phase, 'awaitingDebtResolution');
+    resolveRent(state, board, 'one', payment.id);
+    assert.equal(state.pendingPayments.length, 0);
+});
 
 test('board data validates and game starts at configured first space with selected colors', () => {
     const state = startGame(board, players);
@@ -228,15 +335,15 @@ test('houses and hotels require the configured color group, even progression, an
     assert.throws(() => sellProperty(charged, board, 'one', 'paulista'), /edificios/);
 });
 
-test('bank sale returns exactly half the purchase price and removes ownership', () => {
+test('bank sale returns exactly 75 percent of the purchase price and removes ownership', () => {
     const state = startGame(board, players);
     state.phase = 'awaitingAction';
     state.propertyOwners.pinheiros = 'one';
     const before = state.players[0].balance;
     sellProperty(state, board, 'one', 'pinheiros');
-    assert.equal(state.players[0].balance - before, 32500);
+    assert.equal(state.players[0].balance - before, 48750);
     assert.equal(state.propertyOwners.pinheiros, undefined);
-    assert.equal(state.transactions.at(-1)?.amount, 32500);
+    assert.equal(state.transactions.at(-1)?.amount, 48750);
 });
 
 test('purchase financing preserves the pending purchase and allows retry', () => {
@@ -716,4 +823,41 @@ test('emergency fund withdrawal can cover a pending mandatory tax before explici
     resolveRent(state, board, player.id, payment.id);
     assert.equal(player.balance, board.startingBalance - payment.amount);
     assert.equal(state.phase, 'awaitingAction');
+});
+
+test('mortgaged bank sale pays 15000 net for a 100000 property and cannot pay twice', () => {
+    const saleBoard = structuredClone(board);
+    saleBoard.properties.find(property => property.id === 'paulista')!.price = 100000;
+    const state = startGame(saleBoard, players);
+    state.phase = 'awaitingAction'; state.propertyOwners.paulista = 'one';
+    const initialBalance = state.players[0].balance;
+    mortgageProperty(state, saleBoard, 'one', 'paulista', 'bank-sale');
+    assert.equal(state.players[0].balance, initialBalance + 50000);
+    assert.deepEqual(bankPropertySaleTerms(state, saleBoard, 'paulista'), { bankSalePrice: 75000, bankSaleNet: 15000 });
+    saleBoard.properties.find(property => property.id === 'paulista')!.price = 200000;
+    sellProperty(state, saleBoard, 'one', 'paulista');
+    assert.equal(state.players[0].balance, initialBalance + 65000);
+    assert.equal(state.propertyOwners.paulista, undefined);
+    assert.equal(state.mortgages.paulista, undefined);
+    assert.equal(state.transactions.at(-1)?.amount, 15000);
+    assert.equal(state.transactions.at(-1)?.details?.mortgageSettlement, 60000);
+    const once = structuredClone(state);
+    assert.throws(() => sellProperty(state, saleBoard, 'one', 'paulista'), /proprietario/);
+    assert.deepEqual(state, once);
+});
+
+test('mortgaged bank sales retain building restrictions and roll back failed payouts', () => {
+    const state = startGame(board, players);
+    state.phase = 'awaitingAction'; state.propertyOwners.paulista = 'one';
+    mortgageProperty(state, board, 'one', 'paulista', 'failed-bank-sale');
+    state.players[0].balance = Number.MAX_SAFE_INTEGER;
+    const before = structuredClone(state);
+    assert.throws(() => sellProperty(state, board, 'one', 'paulista'), /limite/);
+    assert.deepEqual(state, before);
+    state.players[0].balance = 0;
+    const neighbor = board.properties.find(property => property.id !== 'paulista' && property.color === board.properties.find(property => property.id === 'paulista')!.color)!;
+    state.houses[neighbor.id] = 1;
+    const developed = structuredClone(state);
+    assert.throws(() => sellProperty(state, board, 'one', 'paulista'), /edificios/);
+    assert.deepEqual(state, developed);
 });

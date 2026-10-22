@@ -4,6 +4,7 @@ import { mkdirSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
 import { BoardsService } from './boards.service';
+import { mortgageProperty } from './game-engine';
 import { acceptPlayerLoan, buildProperty, buyProperty, cancelPlayerLoanRequest, claimFixedIncomeInvestment, createFixedIncomeInvestment, declareBankruptcy, declineBail, depositEmergencyFund, finishTurn, GameState, payBail, repayLoan, requestPlayerLoan, respondPlayerLoan, respondPropertyOffer, resolveRent, roll, sellBuilding, sellProperty, sendPropertyOffer, startGame, takeBankLoan, TOKEN_COLORS, updateQualityOfLife, withdrawEmergencyFund, withdrawFixedIncomeEarly } from './game-engine';
 
 export interface RoomView {
@@ -96,6 +97,7 @@ export class RoomsService implements OnModuleDestroy {
         const game = JSON.parse(room.game_json) as GameState;
         let changed = false;
         const board = this.boards.get(game.boardId);
+        if (!game.mortgages || typeof game.mortgages !== 'object') { game.mortgages = {}; changed = true; }
         for (const player of game.players) {
             if (player.active === undefined) { player.active = true; changed = true; }
             if (player.currentJailFee === undefined) { player.currentJailFee = board.jailFee; changed = true; }
@@ -304,6 +306,7 @@ export class RoomsService implements OnModuleDestroy {
             case 'game:build': buildProperty(game, board, identity.playerId, payload.propertyId as string, payload.building as 'house' | 'hotel'); break;
             case 'game:sell-building': sellBuilding(game, board, identity.playerId, payload.propertyId as string); break;
             case 'game:sell-property': sellProperty(game, board, identity.playerId, payload.propertyId as string); break;
+            case 'game:mortgage-property': mortgageProperty(game, board, identity.playerId, payload.propertyId as string, payload.operationId as string); break;
             case 'game:repay-loan': repayLoan(game, identity.playerId, payload.loanId as string); break;
             case 'game:declare-bankruptcy': declareBankruptcy(game, board, identity.playerId); break;
             case 'game:request-player-loan': requestPlayerLoan(game, board, identity.playerId, payload.lenderId as string, payload.amount as number | undefined, typeof payload.installments === 'number' ? payload.installments : 1, typeof payload.interestRate === 'number' ? payload.interestRate : board.bankInterestRate); break;
@@ -316,7 +319,7 @@ export class RoomsService implements OnModuleDestroy {
                 break;
             }
             case 'game:offer-property': sendPropertyOffer(game, board, identity.playerId, payload.propertyId as string, payload.amount as number); break;
-            case 'game:respond-property-offer': respondPropertyOffer(game, identity.playerId, payload.accept === true, board); break;
+            case 'game:respond-property-offer': respondPropertyOffer(game, identity.playerId, payload.accept === true, board, payload.offerId as string | undefined); break;
             default: throw new BadRequestException('Acao de jogo desconhecida.');
         }
         updateQualityOfLife(game, board);

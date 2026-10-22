@@ -2814,6 +2814,48 @@ input::placeholder {
     border-top: 1px solid #e6ebe3;
 }
 
+.mortgage-status {
+    color: #9b4e37;
+    font-size: 11px;
+    line-height: 1.5;
+}
+
+.mortgage-details {
+    grid-column: 1 / -1;
+    min-width: 0;
+}
+
+.mortgage-details p,
+.property-finance p {
+    color: var(--muted);
+    font-size: 11px;
+    line-height: 1.5;
+    margin: 8px 0;
+}
+
+.property-finance {
+    display: grid;
+    gap: 10px;
+    min-width: 0;
+    margin: 12px 0;
+}
+
+.property-finance>p[role='status'] {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.mortgage-dialog {
+    max-width: 540px;
+    max-height: 90dvh;
+    overflow-y: auto;
+}
+
+.property-finance .financial-summary>div {
+    padding: 10px;
+}
+
 .property-controls .button {
     min-height: 40px;
     padding: 8px 11px;

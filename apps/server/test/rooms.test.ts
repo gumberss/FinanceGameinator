@@ -18,6 +18,49 @@ const update = (socket: Socket, predicate: (room: RoomView) => boolean) => new P
     socket.on('room:update', listener);
 });
 
+test('mortgages synchronize over sockets, quote authoritative terms, and survive reconnects', async () => {
+    const app = await createApplication(':memory:');
+    await app.listen(0, '127.0.0.1');
+    const url = await app.getUrl();
+    const rooms = app.get(RoomsService);
+    const owner = rooms.create({ name: 'Owner', password: 'safe-pass' });
+    const guest = rooms.join({ name: 'Guest', password: 'safe-pass', code: owner.room.code });
+    const host = io(url, { auth: { code: owner.room.code, token: owner.token }, transports: ['websocket'], forceNew: true });
+    const visitor = io(url, { auth: { code: owner.room.code, token: guest.token }, transports: ['websocket'], forceNew: true });
+    try {
+        await update(visitor, room => room.players.every(player => player.online));
+        rooms.start({ code: owner.room.code, playerId: owner.playerId }, 'classic');
+        const game = rooms.view(owner.room.code).game!;
+        game.phase = 'awaitingAction'; game.propertyOwners.paulista = owner.playerId;
+        const database = (rooms as unknown as { db: DatabaseSync }).db;
+        database.prepare('UPDATE rooms SET game_json = ? WHERE code = ?').run(JSON.stringify(game), owner.room.code);
+        const synchronized = update(visitor, room => Boolean(room.game?.mortgages.paulista));
+        const result = await action(host, 'game:mortgage-property', { propertyId: 'paulista', operationId: 'socket-mortgage' });
+        assert.equal(result.ok, true);
+        assert.equal((await synchronized).game?.mortgages.paulista.settlement, 48000);
+        const retry = await action(host, 'game:mortgage-property', { propertyId: 'paulista', operationId: 'socket-mortgage' });
+        assert.equal(retry.room.game.players[0].balance, result.room.game.players[0].balance);
+        assert.equal(retry.room.game.transactions.filter((transaction: { type: string }) => transaction.type === 'mortgage').length, 1);
+        const quote = await fetch(`${url}/api/rooms/property-terms`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code: owner.room.code, token: guest.token, propertyId: 'paulista', amount: 300000 }) });
+        const terms = await quote.json() as { payout: number; interest: number; settlement: number; sellerProceeds: number; bankSalePrice: number; bankSaleNet: number };
+        assert.equal(quote.status, 201);
+        assert.equal(terms.payout, 40000); assert.equal(terms.interest, 8000);
+        assert.equal(terms.settlement, 48000); assert.equal(terms.sellerProceeds, 252000);
+        assert.equal(terms.bankSalePrice, 60000); assert.equal(terms.bankSaleNet, 12000);
+        visitor.disconnect();
+        const reconnected = update(visitor, room => room.players.some(player => player.id === guest.playerId && player.online));
+        visitor.connect();
+        assert.deepEqual((await reconnected).game?.mortgages, result.room.game.mortgages);
+        const cleared = update(visitor, room => !room.game?.propertyOwners.paulista && !room.game?.mortgages.paulista);
+        const sold = await action(host, 'game:sell-property', { propertyId: 'paulista' });
+        assert.equal(sold.ok, true);
+        assert.equal(sold.room.game.players[0].balance, result.room.game.players[0].balance + 12000);
+        assert.equal((await cleared).game?.mortgages.paulista, undefined);
+        const repeatedSale = await action(host, 'game:sell-property', { propertyId: 'paulista' });
+        assert.equal(repeatedSale.ok, false);
+    } finally { host.disconnect(); visitor.disconnect(); await app.close(); }
+});
+
 test('real HTTP + sockets: passwords, presence, authorization, reconnect, start and leave', async () => {
     const app = await createApplication(':memory:');
     await app.listen(0, '127.0.0.1');
@@ -192,6 +235,12 @@ test('SQLite restores the selected board, game snapshot, player colors, and bala
     original.connect({ code: owner.room.code, playerId: guest.playerId }, 'guest-socket');
     original.start({ code: owner.room.code, playerId: owner.playerId }, 'classic');
     const before = original.gameAction({ code: owner.room.code, playerId: owner.playerId }, 'game:roll');
+    const database = (original as unknown as { db: DatabaseSync }).db;
+    const game = structuredClone(before.game!);
+    game.phase = 'awaitingAction'; game.pendingAction = null; game.pendingPayments = [];
+    game.currentPlayerId = owner.playerId; game.propertyOwners.paulista = owner.playerId;
+    database.prepare('UPDATE rooms SET game_json = ? WHERE code = ?').run(JSON.stringify(game), owner.room.code);
+    const mortgaged = original.gameAction({ code: owner.room.code, playerId: owner.playerId }, 'game:mortgage-property', { propertyId: 'paulista', operationId: 'persist-mortgage' });
     original.onModuleDestroy();
 
     const restored = new RoomsService(path, new BoardsService());
@@ -200,7 +249,10 @@ test('SQLite restores the selected board, game snapshot, player colors, and bala
         assert.equal(room.status, 'started');
         assert.equal(room.game?.boardId, 'classic');
         assert.deepEqual(room.game?.lastRoll, before.game?.lastRoll);
-        assert.deepEqual(room.game?.players.map(player => player.balance), before.game?.players.map(player => player.balance));
+        assert.deepEqual(room.game?.players.map(player => player.balance), mortgaged.game?.players.map(player => player.balance));
+        assert.deepEqual(room.game?.mortgages, mortgaged.game?.mortgages);
+        assert.equal(room.game?.mortgages.paulista.payout, 40000);
+        assert.equal(room.game?.propertyOwners.paulista, owner.playerId);
         assert.deepEqual(room.players.map(player => player.online), [false, false]);
         assert.notEqual(room.players[0].color, room.players[1].color);
     } finally { restored.onModuleDestroy(); rmSync(directory, { recursive: true }); }
@@ -263,6 +315,7 @@ test('legacy snapshots migrate empty education accounts without retroactive cycl
         delete player.emergencyFundLastProcessedCycle;
     }
     delete legacy.investments;
+    delete legacy.mortgages;
     delete legacy.startCrossings;
     database.prepare('UPDATE rooms SET game_json = ? WHERE code = ?').run(JSON.stringify(legacy), owner.room.code);
     original.onModuleDestroy();
@@ -276,6 +329,7 @@ test('legacy snapshots migrate empty education accounts without retroactive cycl
         assert.equal(ownerState.emergencyFundInterestTotal, 0);
         assert.equal(ownerState.emergencyFundLastProcessedCycle, 0);
         assert.deepEqual(game.investments, []);
+        assert.deepEqual(game.mortgages, {});
         assert.deepEqual(game.startCrossings, {});
         assert.equal(guest.room.code, owner.room.code);
     } finally { restored.onModuleDestroy(); rmSync(directory, { recursive: true }); }
